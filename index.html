@@ -10,8 +10,27 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Aptos+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <!-- Google Drive API -->
-    <script src="https://apis.google.com/js/api.js"></script>
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getFirestore } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+        import { getStorage } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js';
+        
+        // Your Firebase config (you'll need to replace this with your actual config)
+        const firebaseConfig = {
+            apiKey: "AIzaSyA_mxEi_m89rlc5quGQwldgS8rXOI66-mI",
+            authDomain: "forana-3cc0f.firebaseapp.com",
+            projectId: "forana-3cc0f",
+            storageBucket: "forana-3cc0f.firebasestorage.app",
+            messagingSenderId: "254024281820",
+            appId: "1:254024281820:web:7574bb8369e25dd8400e19"
+        };
+        
+        // Initialize Firebase
+        window.firebaseApp = initializeApp(firebaseConfig);
+        window.db = getFirestore(window.firebaseApp);
+        window.storage = getStorage(window.firebaseApp);
+    </script>
 </head>
 <body>
     <div class="container">
