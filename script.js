@@ -330,15 +330,27 @@ class WeeklyPlanner {
     }
     
     changeWeek(direction) {
-        this.currentWeek.setDate(this.currentWeek.getDate() + (direction * 7));
+        // Get the current week's start date
+        const currentStartOfWeek = new Date(this.currentWeek);
+        currentStartOfWeek.setDate(currentStartOfWeek.getDate() - currentStartOfWeek.getDay());
+        
+        // Calculate the new week's start date
+        const newDate = new Date(currentStartOfWeek);
+        newDate.setDate(currentStartOfWeek.getDate() + (direction * 7));
+        
+        // Update the current week
+        this.currentWeek = newDate;
         this.updateWeekTitle();
-        this.updateCurrentView();
+        this.generateWeekView();
     }
     
     goToCurrentWeek() {
         this.currentWeek = new Date();
+        const startOfWeek = new Date(this.currentWeek);
+        startOfWeek.setDate(this.currentWeek.getDate() - this.currentWeek.getDay());
+        this.currentWeek = startOfWeek;
         this.updateWeekTitle();
-        this.updateCurrentView();
+        this.generateWeekView();
     }
     
     switchView(view) {
@@ -364,18 +376,20 @@ class WeeklyPlanner {
     }
     
     updateWeekTitle() {
+        const options = { day: 'numeric', month: 'long' };
+        // Get start of week
         const startOfWeek = new Date(this.currentWeek);
-        startOfWeek.setDate(this.currentWeek.getDate() - this.currentWeek.getDay());
+        startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
         
+        // Calculate end of week
         const endOfWeek = new Date(startOfWeek);
         endOfWeek.setDate(startOfWeek.getDate() + 6);
         
-        const options = { day: 'numeric', month: 'short' };
         const startStr = startOfWeek.toLocaleDateString('es-ES', options);
         const endStr = endOfWeek.toLocaleDateString('es-ES', options);
         const year = startOfWeek.getFullYear();
         
-        this.currentWeekTitle.textContent = `Semana del ${startStr} - ${endStr} ${year}`;
+        this.currentWeekTitle.textContent = `Semana del ${startStr} al ${endStr} ${year}`;
     }
     
     generateWeekView() {
@@ -393,11 +407,12 @@ class WeeklyPlanner {
     }
     
     generateDayColumns() {
-        const startOfWeek = new Date(this.currentWeek);
-        startOfWeek.setDate(this.currentWeek.getDate() - this.currentWeek.getDay());
-        
         const days = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
         const today = new Date();
+        
+        // Get start of week
+        const startOfWeek = new Date(this.currentWeek);
+        startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
         
         let html = '';
         
@@ -410,11 +425,14 @@ class WeeklyPlanner {
                 activity.date === currentDay.toISOString().split('T')[0]
             );
             
+            const options = { day: 'numeric', month: 'short' };
+            const formattedDate = currentDay.toLocaleDateString('es-ES', options);
+            
             html += `
                 <div class="day-column">
                     <div class="day-header ${isToday ? 'today' : ''}">
-                        <div>${days[i]}</div>
-                        <div class="day-date">${currentDay.getDate()}</div>
+                        <div>${days[currentDay.getDay()]}</div>
+                        <div class="day-date">${formattedDate}</div>
                     </div>
                     <div class="day-activities">
                         ${this.generateHourSlots(dayActivities)}
@@ -430,20 +448,23 @@ class WeeklyPlanner {
         let html = '';
         
         for (let hour = 6; hour <= 23; hour++) {
-            const hourActivities = dayActivities.filter(activity => {
-                const activityHour = parseInt(activity.startTime.split(':')[0]);
-                return activityHour === hour;
+            const hourStr = hour.toString().padStart(2, '0');
+            const currentHourActivities = dayActivities.filter(activity => {
+                const startHour = parseInt(activity.startTime.split(':')[0]);
+                const endHour = activity.endTime ? parseInt(activity.endTime.split(':')[0]) : startHour;
+                return startHour <= hour && hour <= endHour;
             });
             
-            html += `<div class="day-hour-slot">`;
+            html += `<div class="day-hour-slot" data-hour="${hourStr}:00">`;
             
-            hourActivities.forEach(activity => {
+            currentHourActivities.forEach(activity => {
                 const categoryClass = `category-${activity.category}`;
                 const userClass = activity.user;
                 const categoryIcon = this.getCategoryIcon(activity.category);
                 
                 html += `
-                    <div class="activity-block ${userClass} ${categoryClass}" onclick="window.weeklyPlanner.showActivityDetails(${activity.id})">
+                    <div class="activity-block ${userClass} ${categoryClass}" 
+                         onclick="window.weeklyPlanner.showActivityDetails(${activity.id})">
                         <div class="activity-title">${activity.title}</div>
                         <div class="activity-time">${activity.startTime}${activity.endTime !== activity.startTime ? ' - ' + activity.endTime : ''}</div>
                         <div class="activity-category">${categoryIcon}</div>
@@ -451,7 +472,7 @@ class WeeklyPlanner {
                 `;
             });
             
-            html += `</div>`;
+            html += '</div>';
         }
         
         return html;
