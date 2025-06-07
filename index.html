@@ -35,8 +35,8 @@
 <body>
     <div class="container">
         <header class="header">
-            <h1>💕 Mi Mensaje Especial 💕</h1>
-            <p class="subtitle">Un espacio creado con amor <span class="code-accent">cariño</span></p>
+            <h1>💕 Para Ana, Con Amor 💕</h1>
+            <p class="subtitle">Un lugar especial creado solo para nosotros <span class="code-accent">♥</span></p>
             <div class="backup-options" id="backupOptions">
                 <button id="exportData" class="backup-btn">💾 Exportar Datos</button>
                 <button id="importData" class="backup-btn">📥 Importar Datos</button>
@@ -47,9 +47,9 @@
 
         <nav class="menu">
             <div class="menu-item" data-section="proposal">
-                <div class="soft-icon icon-proposal">💭</div>
-                <h3>Espacio de Propuestas</h3>
-                <p>Donde desarrollamos ideas profundas</p>
+                <div class="soft-icon icon-proposal">💝</div>
+                <h3>Mi Propuesta Especial</h3>
+                <p>Algo muy importante que quiero preguntarte</p>
             </div>
             <div class="menu-item" data-section="album">
                 <div class="soft-icon icon-album">📸</div>
@@ -67,20 +67,50 @@
         <section id="proposal" class="section hidden">
             <div class="section-header">
                 <button class="back-btn">⬅️ Volver</button>
-                <h2>Espacio de Propuestas</h2>
+                <h2>💕 Para Ana 💕</h2>
             </div>
             <div class="proposal-content">
-                <div class="message-area">
-                    <h3>Escribe tu mensaje especial:</h3>
-                    <textarea id="specialMessage" placeholder="Aquí puedes escribir tu mensaje especial, ideas profundas, o cualquier cosa que quieras expresar..."></textarea>
-                    <div class="message-actions">
-                        <button id="saveMessage">💾 Guardar Mensaje</button>
-                        <button id="clearMessage">🗑️ Limpiar</button>
+                <div class="love-letter">
+                    <div class="letter-header">
+                        <h3>Mi Corazón Late Por Ti</h3>
+                        <div class="hearts-animation">
+                            <span class="heart">💖</span>
+                            <span class="heart">💝</span>
+                            <span class="heart">💕</span>
+                        </div>
                     </div>
-                </div>
-                <div class="saved-messages">
-                    <h3>Mensajes Guardados:</h3>
-                    <div id="messagesList"></div>
+                    
+                    <div class="letter-content">
+                        <p class="letter-paragraph">
+                            <span class="highlight">Ana</span>, desde el momento en que entraste a mi vida, 
+                            todo cambió. Cada día contigo es una nueva aventura, cada sonrisa tuya 
+                            ilumina mi mundo de una manera que nunca creí posible.
+                        </p>
+                        
+                        <p class="letter-paragraph">
+                            He creado este espacio especial para nosotros porque quiero que sepas 
+                            que eres la persona más importante en mi vida. Cada función de esta página 
+                            representa algo de nosotros: nuestras fotos juntos, nuestro tiempo de 
+                            calidad cuando estudiamos con el Pomodoro...
+                        </p>
+                        
+                        <div class="big-question">
+                            <h2 class="question-text">Ana, ¿Quieres ser mi novia?</h2>
+                            <div class="question-buttons">
+                                <button id="yesButton" class="answer-btn yes-btn">💕 ¡SÍ! 💕</button>
+                                <button id="noButton" class="answer-btn no-btn">💔 No...</button>
+                            </div>
+                        </div>
+                        
+                        <p class="letter-paragraph signature">
+                            Con todo mi amor,<br>
+                            <span class="signature-name">Tu Juan 💝</span>
+                        </p>
+                    </div>
+                    
+                    <div id="responseArea" class="response-area hidden">
+                        <!-- Response will be shown here -->
+                    </div>
                 </div>
             </div>
         </section>
