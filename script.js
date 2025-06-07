@@ -421,7 +421,9 @@ function initializeApp() {
     updateTimerDisplay();
     
     // Load special message and start gerberas animation
-    loadSpecialMessage();
+    setTimeout(() => {
+        loadSpecialMessage();
+    }, 100);
     createFloatingGerberas();
 }
 
@@ -821,45 +823,54 @@ async function loadSpecialMessage() {
             // Replace the letter content with the loaded message
             const letterContent = document.querySelector('.letter-content');
             if (letterContent && messageText.trim()) {
-                // Split message into paragraphs and format them
-                const paragraphs = messageText.split('\n\n').filter(p => p.trim());
-                let formattedMessage = '';
+                // Clean the text and split into paragraphs
+                const cleanText = messageText.replace(/\r/g, '').trim();
+                const paragraphs = cleanText.split('\n\n').filter(p => p.trim());
                 
-                paragraphs.forEach((paragraph, index) => {
-                    if (paragraph.includes('¿Quieres ser mi enamorada?')) {
-                        formattedMessage += `
-                            <div class="big-question">
-                                <h2 class="question-text">${paragraph.trim()}</h2>
-                                <div class="question-buttons">
-                                    <button id="yesButton" class="answer-btn yes-btn">💕 ¡SÍ! 💕</button>
-                                    <button id="noButton" class="answer-btn no-btn">💔 No...</button>
+                if (paragraphs.length > 0) {
+                    let formattedMessage = '';
+                    
+                    paragraphs.forEach((paragraph, index) => {
+                        const cleanParagraph = paragraph.trim();
+                        if (cleanParagraph.includes('Quieres ser mi novia') || cleanParagraph.includes('¿Quieres ser mi novia?')) {
+                            formattedMessage += `
+                                <div class="big-question">
+                                    <h2 class="question-text">¿${cleanParagraph.replace('Quieres', '')}?</h2>
+                                    <div class="question-buttons">
+                                        <button id="yesButton" class="answer-btn yes-btn">💕 ¡SÍ! 💕</button>
+                                        <button id="noButton" class="answer-btn no-btn">💔 No...</button>
+                                    </div>
                                 </div>
-                            </div>
-                        `;
-                    } else if (paragraph.includes('Con todo mi cariño')) {
-                        formattedMessage += `
-                            <p class="letter-paragraph signature">
-                                ${paragraph.replace('Juan 💕🌻', '<span class="signature-name">Juan 💕🌻</span>')}
-                            </p>
-                        `;
-                    } else {
-                        const highlightedText = paragraph.replace(/Ana/g, '<span class="highlight">Ana</span>')
-                                                        .replace(/gerberas/g, '<span class="highlight">🌻 gerberas 🌻</span>');
-                        formattedMessage += `<p class="letter-paragraph">${highlightedText}</p>`;
-                    }
-                });
-                
-                letterContent.innerHTML = formattedMessage;
-                console.log('✅ Mensaje especial cargado desde archivo');
-                
-                // Re-attach event listeners for answer buttons
-                setupProposalEventListeners();
+                            `;
+                        } else if (cleanParagraph.includes('Con todo mi amor') || cleanParagraph.includes('Tu Juan')) {
+                            formattedMessage += `
+                                <p class="letter-paragraph signature">
+                                    ${cleanParagraph.replace('Tu Juan', '<br><span class="signature-name">Tu Juan 💝</span>')}
+                                </p>
+                            `;
+                        } else {
+                            const highlightedText = cleanParagraph.replace(/Ana/g, '<span class="highlight">Ana</span>')
+                                                            .replace(/gerberas/g, '<span class="highlight">🌻 gerberas 🌻</span>');
+                            formattedMessage += `<p class="letter-paragraph">${highlightedText}</p>`;
+                        }
+                    });
+                    
+                    letterContent.innerHTML = formattedMessage;
+                    console.log('✅ Mensaje especial cargado desde archivo');
+                    
+                    // Re-attach event listeners for answer buttons
+                    setupProposalEventListeners();
+                    return;
+                }
             }
         }
     } catch (error) {
-        console.log('ℹ️ No se pudo cargar el mensaje especial desde archivo, usando el predeterminado');
-        setupProposalEventListeners();
+        console.log('ℹ️ No se pudo cargar el mensaje especial desde archivo:', error);
     }
+    
+    // Fallback: keep the default message and setup event listeners
+    console.log('📝 Usando mensaje predeterminado');
+    setupProposalEventListeners();
 }
 
 // Setup proposal event listeners
