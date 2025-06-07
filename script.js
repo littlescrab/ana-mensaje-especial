@@ -158,6 +158,202 @@ function loadPhotosFromFirebase() {
     }
 }
 
+// Weekly Planner Class
+class WeeklyPlanner {
+    constructor() {
+        this.activities = [];
+        this.currentWeek = new Date();
+        this.initializeElements();
+        this.setupEventListeners();
+        this.loadActivities();
+        this.generateCalendar();
+    }
+    
+    initializeElements() {
+        this.userSelect = document.getElementById('userSelect');
+        this.activityInput = document.getElementById('activityInput');
+        this.activityDate = document.getElementById('activityDate');
+        this.activityTime = document.getElementById('activityTime');
+        this.addButton = document.getElementById('addActivity');
+        this.calendarGrid = document.getElementById('calendarGrid');
+        this.activitiesList = document.getElementById('activitiesList');
+        
+        // Set default date to today
+        const today = new Date();
+        this.activityDate.value = today.toISOString().split('T')[0];
+    }
+    
+    setupEventListeners() {
+        this.addButton.addEventListener('click', () => this.addActivity());
+        this.activityInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') this.addActivity();
+        });
+    }
+    
+    async addActivity() {
+        const user = this.userSelect.value;
+        const title = this.activityInput.value.trim();
+        const date = this.activityDate.value;
+        const time = this.activityTime.value;
+        
+        if (!title || !date) {
+            alert('Por favor completa el título y la fecha');
+            return;
+        }
+        
+        const activity = {
+            id: Date.now(),
+            user,
+            title,
+            date,
+            time: time || '00:00',
+            timestamp: new Date().toISOString()
+        };
+        
+        this.activities.push(activity);
+        await this.saveActivities();
+        this.generateCalendar();
+        this.updateActivitiesList();
+        
+        // Clear form
+        this.activityInput.value = '';
+        this.activityTime.value = '';
+        
+        showNotification('✅ Actividad agregada al planner');
+    }
+    
+    async deleteActivity(id) {
+        this.activities = this.activities.filter(activity => activity.id !== id);
+        await this.saveActivities();
+        this.generateCalendar();
+        this.updateActivitiesList();
+        showNotification('🗑️ Actividad eliminada');
+    }
+    
+    generateCalendar() {
+        const today = new Date();
+        const startOfWeek = new Date(today);
+        startOfWeek.setDate(today.getDate() - today.getDay());
+        
+        const days = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+        let html = '';
+        
+        for (let i = 0; i < 7; i++) {
+            const currentDay = new Date(startOfWeek);
+            currentDay.setDate(startOfWeek.getDate() + i);
+            
+            const dayActivities = this.activities.filter(activity => 
+                activity.date === currentDay.toISOString().split('T')[0]
+            );
+            
+            const isToday = currentDay.toDateString() === today.toDateString();
+            
+            html += `
+                <div class="calendar-day ${isToday ? 'today' : ''}">
+                    <div class="day-name">${days[i]}</div>
+                    <div class="day-number">${currentDay.getDate()}</div>
+                    ${dayActivities.map(activity => `
+                        <div class="activity-item ${activity.user}">
+                            ${activity.time} - ${activity.title.substring(0, 15)}${activity.title.length > 15 ? '...' : ''}
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+        
+        this.calendarGrid.innerHTML = html;
+    }
+    
+    updateActivitiesList() {
+        const sortedActivities = this.activities
+            .filter(activity => new Date(activity.date) >= new Date().setHours(0,0,0,0))
+            .sort((a, b) => {
+                const dateA = new Date(`${a.date}T${a.time}`);
+                const dateB = new Date(`${b.date}T${b.time}`);
+                return dateA - dateB;
+            })
+            .slice(0, 10); // Show next 10 activities
+        
+        if (sortedActivities.length === 0) {
+            this.activitiesList.innerHTML = '<p style="text-align: center; color: #e8c5ca; opacity: 0.7;">No hay actividades programadas</p>';
+            return;
+        }
+        
+        const html = sortedActivities.map(activity => {
+            const activityDate = new Date(activity.date);
+            const formattedDate = activityDate.toLocaleDateString('es-ES', { 
+                weekday: 'short', 
+                month: 'short', 
+                day: 'numeric' 
+            });
+            
+            return `
+                <div class="activity-card ${activity.user}">
+                    <div class="activity-info">
+                        <div class="activity-title">${activity.title}</div>
+                        <div class="activity-details">
+                            <span>📅 ${formattedDate}</span>
+                            <span>⏰ ${activity.time}</span>
+                            <span class="activity-user ${activity.user}">${activity.user === 'juan' ? '👨 Juan' : '👩 Ana'}</span>
+                        </div>
+                    </div>
+                    <button class="delete-activity" onclick="window.weeklyPlanner.deleteActivity(${activity.id})">
+                        🗑️
+                    </button>
+                </div>
+            `;
+        }).join('');
+        
+        this.activitiesList.innerHTML = html;
+    }
+    
+    async saveActivities() {
+        try {
+            if (window.db && collection && addDoc) {
+                const { doc, setDoc } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
+                await setDoc(doc(window.db, 'planner', 'activities'), {
+                    activities: this.activities,
+                    lastUpdated: new Date().toISOString()
+                });
+                console.log('✅ Actividades sincronizadas con Firebase');
+            } else {
+                localStorage.setItem('planner_activities', JSON.stringify(this.activities));
+                console.log('📱 Actividades guardadas localmente');
+            }
+        } catch (error) {
+            console.log('Guardando en localStorage como respaldo:', error);
+            localStorage.setItem('planner_activities', JSON.stringify(this.activities));
+        }
+    }
+    
+    async loadActivities() {
+        try {
+            if (window.db && collection && onSnapshot) {
+                const { doc, getDoc } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
+                const docSnap = await getDoc(doc(window.db, 'planner', 'activities'));
+                
+                if (docSnap.exists()) {
+                    this.activities = docSnap.data().activities || [];
+                    console.log('✅ Actividades cargadas desde Firebase');
+                } else {
+                    this.activities = [];
+                }
+            } else {
+                const stored = localStorage.getItem('planner_activities');
+                this.activities = stored ? JSON.parse(stored) : [];
+                console.log('📱 Actividades cargadas desde localStorage');
+            }
+        } catch (error) {
+            console.log('Cargando desde localStorage como respaldo:', error);
+            const stored = localStorage.getItem('planner_activities');
+            this.activities = stored ? JSON.parse(stored) : [];
+        }
+        
+        this.generateCalendar();
+        this.updateActivitiesList();
+    }
+}
+
 // Initialize the app
 document.addEventListener('DOMContentLoaded', function() {
     initializeApp();
@@ -169,11 +365,17 @@ document.addEventListener('DOMContentLoaded', function() {
             setTimeout(() => {
                 loadMessagesFromFirebase();
                 loadPhotosFromFirebase();
+                
+                // Initialize planner after Firebase is ready
+                window.weeklyPlanner = new WeeklyPlanner();
             }, 1000);
         } else {
             // Fall back to local storage
             loadExistingPhotos();
             loadSavedMessages();
+            
+            // Initialize planner with local storage
+            window.weeklyPlanner = new WeeklyPlanner();
         }
     }, 500);
 });
@@ -205,6 +407,8 @@ function initializeApp() {
     // Album section events
     document.getElementById('photoInput').addEventListener('change', handlePhotoUpload);
 
+    // Planner section events will be handled by the WeeklyPlanner class
+
     // Pomodoro section events
     document.getElementById('startTimer').addEventListener('click', startTimer);
     document.getElementById('pauseTimer').addEventListener('click', pauseTimer);
@@ -232,6 +436,12 @@ function showSection(sectionName) {
         document.querySelector('.menu').style.display = 'none';
         document.querySelector('.header').style.display = 'none';
         document.getElementById(sectionName).classList.remove('hidden');
+        
+        // Initialize planner when section is shown
+        if (sectionName === 'planner' && window.weeklyPlanner) {
+            window.weeklyPlanner.generateCalendar();
+            window.weeklyPlanner.updateActivitiesList();
+        }
     } else {
         document.querySelector('.menu').style.display = 'grid';
         document.querySelector('.header').style.display = 'block';

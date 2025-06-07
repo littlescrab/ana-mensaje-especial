@@ -37,9 +37,6 @@
         <header class="header">
             <h1>💕 Para Ana, Con Amor 💕</h1>
             <p class="subtitle">Un lugar especial creado solo para nosotros <span class="code-accent">♥</span></p>
-            <div class="backup-options" id="backupOptions">
-                <span id="backupStatus" class="status-text">Listo para respaldo</span>
-            </div>
         </header>
 
         <!-- Gerberas flotantes animadas -->
@@ -62,6 +59,11 @@
                 <div class="soft-icon icon-pomodoro">⏰</div>
                 <h3>Reloj Pomodoro</h3>
                 <p>Tiempo de concentración y descanso</p>
+            </div>
+            <div class="menu-item" data-section="planner">
+                <div class="soft-icon icon-planner">📅</div>
+                <h3>Planner Semanal</h3>
+                <p>Nuestras actividades sincronizadas</p>
             </div>
         </nav>
 
@@ -177,6 +179,44 @@
                             <option value="nature">Naturaleza</option>
                         </select>
                         <button id="testSound">🔊 Probar</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Planner Section -->
+        <section id="planner" class="section hidden">
+            <div class="section-header">
+                <button class="back-btn">⬅️ Volver</button>
+                <h2>📅 Planner Semanal</h2>
+            </div>
+            <div class="planner-content">
+                <div class="planner-header">
+                    <div class="user-selector">
+                        <label>Agregar como:</label>
+                        <select id="userSelect">
+                            <option value="juan">👨 Juan</option>
+                            <option value="ana">👩 Ana</option>
+                        </select>
+                    </div>
+                    <div class="add-activity">
+                        <input type="text" id="activityInput" placeholder="Nueva actividad...">
+                        <input type="date" id="activityDate">
+                        <input type="time" id="activityTime">
+                        <button id="addActivity">➕ Agregar</button>
+                    </div>
+                </div>
+                
+                <div class="week-calendar">
+                    <div class="calendar-grid" id="calendarGrid">
+                        <!-- Calendar will be generated here -->
+                    </div>
+                </div>
+                
+                <div class="activities-list">
+                    <h3>Próximas Actividades</h3>
+                    <div id="activitiesList">
+                        <!-- Activities will be loaded here -->
                     </div>
                 </div>
             </div>
