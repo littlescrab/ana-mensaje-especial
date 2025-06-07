@@ -1166,8 +1166,8 @@ body::before {
     border-radius: 15px;
     padding: 10px;
     backdrop-filter: blur(10px);
-    border: 1px solid rgba(248, 215, 218, 0.1);
-    min-height: 500px;
+    border: 2px solid rgba(248, 215, 218, 0.1);
+    min-height: 1000px;
     width: 100%;
     max-width: none;
     overflow-x: auto;
@@ -1185,16 +1185,16 @@ body::before {
 
 /* Week View */
 .week-grid {
-    display: grid;
+    display: flex;
     grid-template-columns: 80px repeat(7, 1fr);
     gap: 0;
     height: 100%;
-    min-height: 800px;
+    min-height: 100px;
     border: 1px solid rgba(248, 215, 218, 0.2);
     border-radius: 8px;
-    overflow: hidden;
+    overflow-x: auto;
     width: 100%;
-    min-width: 100%;
+    min-width: 1000px;
 }
 
 .time-column {
@@ -1203,13 +1203,20 @@ body::before {
 }
 
 .time-header {
+    display: flex;           /* activa flexbox */
+    align-items: center;     /* alinea verticalmente al centro */
+    justify-content: center; /* (opcional) centra horizontalmente el texto */
     background: rgba(214, 51, 132, 0.3);
     color: #f8d7da;
     padding: 15px 10px;
-    text-align: center;
     font-weight: 600;
-    border-radius: 8px;
-    margin-bottom: 10px;
+    border-bottom: 1px solid rgba(248, 215, 218, 0.2);
+    position: relative;
+    height: 70px;
+    font-size: 0.9em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .time-slots {
@@ -1254,9 +1261,9 @@ body::before {
     flex-direction: column;
     border-right: 1px solid rgba(248, 215, 218, 0.2);
     min-width: 0;
-    flex: 1;
-    width: 100%;
+    flex: 1; /* Ocupa espacio proporcional dentro del grid o flex container */
 }
+
 
 .day-column:last-child {
     border-right: none;
@@ -1265,7 +1272,7 @@ body::before {
 .day-header {
     background: rgba(214, 51, 132, 0.3);
     color: #f8d7da;
-    padding: 12px 8px;
+    padding: 15px 10px;
     text-align: center;
     font-weight: 600;
     border-bottom: 1px solid rgba(248, 215, 218, 0.2);
@@ -1274,6 +1281,7 @@ body::before {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    height: 70px;
 }
 
 .day-header.today {
@@ -1292,6 +1300,7 @@ body::before {
     flex-direction: column;
     position: relative;
     min-height: 400px;
+    flex-grow: 1;
 }
 
 .day-hour-slot {
