@@ -48,8 +48,12 @@ async function saveMessageToFirebase(message) {
             timestamp: serverTimestamp()
         });
         console.log('Message saved to Firebase');
+        showNotification('✅ Mensaje guardado en la nube ☁️', 'success');
+        return true;
     } catch (error) {
         console.error('Error saving message to Firebase:', error);
+        showNotification('⚠️ Error guardando en Firebase, guardado localmente', 'warning');
+        return false;
     }
 }
 
@@ -73,6 +77,7 @@ async function uploadPhotoToFirebase(photoData) {
         // Get download URL
         const downloadURL = await getDownloadURL(photoRef);
         console.log('Photo uploaded to Firebase');
+        showNotification('✅ Foto subida a la nube ☁️', 'success');
         
         // Save photo metadata to Firestore
         const photosRef = collection(db, 'photos');
@@ -86,6 +91,7 @@ async function uploadPhotoToFirebase(photoData) {
         return downloadURL;
     } catch (error) {
         console.error('Error uploading photo to Firebase:', error);
+        showNotification('⚠️ Error subiendo foto, guardada localmente', 'warning');
         return photoData.data; // Fall back to local data
     }
 }
@@ -112,8 +118,8 @@ function loadMessagesFromFirebase() {
             // Sort by timestamp (newest first)
             firebaseMessages.sort((a, b) => new Date(b.date) - new Date(a.date));
             
-            // Display Firebase messages
-            displayMessages(firebaseMessages);
+        // Display Firebase messages with sync indicators
+            displayMessages(firebaseMessages, true); // true indicates Firebase source
         });
     } catch (error) {
         console.error('Error loading messages from Firebase:', error);
