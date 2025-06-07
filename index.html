@@ -191,32 +191,169 @@
                 <h2>📅 Planner Semanal</h2>
             </div>
             <div class="planner-content">
-                <div class="planner-header">
-                    <div class="user-selector">
-                        <label>Agregar como:</label>
-                        <select id="userSelect">
-                            <option value="juan">👨 Juan</option>
-                            <option value="ana">👩 Ana</option>
-                        </select>
+                <!-- Planner Controls -->
+                <div class="planner-controls">
+                    <div class="week-navigation">
+                        <button id="prevWeek" class="nav-btn">⬅️</button>
+                        <h3 id="currentWeekTitle">Semana del 3 - 9 Junio 2025</h3>
+                        <button id="nextWeek" class="nav-btn">➡️</button>
+                        <button id="todayBtn" class="today-btn">Hoy</button>
                     </div>
-                    <div class="add-activity">
-                        <input type="text" id="activityInput" placeholder="Nueva actividad...">
-                        <input type="date" id="activityDate">
-                        <input type="time" id="activityTime">
-                        <button id="addActivity">➕ Agregar</button>
-                    </div>
-                </div>
-                
-                <div class="week-calendar">
-                    <div class="calendar-grid" id="calendarGrid">
-                        <!-- Calendar will be generated here -->
+                    
+                    <div class="view-options">
+                        <button id="weekView" class="view-btn active">📅 Semana</button>
+                        <button id="listView" class="view-btn">📋 Lista</button>
                     </div>
                 </div>
                 
-                <div class="activities-list">
-                    <h3>Próximas Actividades</h3>
-                    <div id="activitiesList">
-                        <!-- Activities will be loaded here -->
+                <!-- Add Activity Form -->
+                <div class="add-activity-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>👤 Usuario:</label>
+                            <select id="userSelect">
+                                <option value="juan">👨 Juan</option>
+                                <option value="ana">👩 Ana</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group flex-grow">
+                            <label>📝 Actividad:</label>
+                            <input type="text" id="activityInput" placeholder="Ej: Cita romántica, Estudiar juntos, Cena especial...">
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>📅 Fecha:</label>
+                            <input type="date" id="activityDate">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>⏰ Hora inicio:</label>
+                            <input type="time" id="activityStartTime">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>🏁 Hora fin:</label>
+                            <input type="time" id="activityEndTime">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>🏷️ Categoría:</label>
+                            <select id="activityCategory">
+                                <option value="personal">💕 Personal</option>
+                                <option value="study">📚 Estudio</option>
+                                <option value="work">💼 Trabajo</option>
+                                <option value="date">🌹 Cita</option>
+                                <option value="fitness">💪 Ejercicio</option>
+                                <option value="social">👥 Social</option>
+                                <option value="other">🔸 Otro</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <button id="addActivity" class="add-btn">➕ Agregar</button>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group flex-grow">
+                            <label>📄 Descripción (opcional):</label>
+                            <textarea id="activityDescription" placeholder="Detalles adicionales sobre la actividad..."></textarea>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Calendar Views -->
+                <div class="calendar-container">
+                    <!-- Week View -->
+                    <div id="weekViewContainer" class="view-container active">
+                        <div class="week-grid">
+                            <!-- Time slots column -->
+                            <div class="time-column">
+                                <div class="time-header">Hora</div>
+                                <div id="timeSlots" class="time-slots">
+                                    <!-- Time slots will be generated here -->
+                                </div>
+                            </div>
+                            
+                            <!-- Days columns -->
+                            <div id="daysContainer" class="days-container">
+                                <!-- Day columns will be generated here -->
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- List View -->
+                    <div id="listViewContainer" class="view-container">
+                        <div class="activities-list">
+                            <div class="list-filters">
+                                <select id="filterUser">
+                                    <option value="all">👤 Todos</option>
+                                    <option value="juan">👨 Juan</option>
+                                    <option value="ana">👩 Ana</option>
+                                </select>
+                                
+                                <select id="filterCategory">
+                                    <option value="all">🏷️ Todas las categorías</option>
+                                    <option value="personal">💕 Personal</option>
+                                    <option value="study">📚 Estudio</option>
+                                    <option value="work">💼 Trabajo</option>
+                                    <option value="date">🌹 Cita</option>
+                                    <option value="fitness">💪 Ejercicio</option>
+                                    <option value="social">👥 Social</option>
+                                    <option value="other">🔸 Otro</option>
+                                </select>
+                                
+                                <select id="filterTime">
+                                    <option value="all">📅 Todos los tiempos</option>
+                                    <option value="today">Hoy</option>
+                                    <option value="tomorrow">Mañana</option>
+                                    <option value="week">Esta semana</option>
+                                    <option value="upcoming">Próximos</option>
+                                </select>
+                            </div>
+                            
+                            <div id="activitiesList" class="activities-grid">
+                                <!-- Activities will be loaded here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Activity Statistics -->
+                <div class="planner-stats">
+                    <div class="stat-card">
+                        <span class="stat-icon">📊</span>
+                        <div class="stat-info">
+                            <span class="stat-number" id="totalActivities">0</span>
+                            <span class="stat-label">Total Actividades</span>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <span class="stat-icon">👨</span>
+                        <div class="stat-info">
+                            <span class="stat-number" id="juanActivities">0</span>
+                            <span class="stat-label">Actividades Juan</span>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <span class="stat-icon">👩</span>
+                        <div class="stat-info">
+                            <span class="stat-number" id="anaActivities">0</span>
+                            <span class="stat-label">Actividades Ana</span>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <span class="stat-icon">💕</span>
+                        <div class="stat-info">
+                            <span class="stat-number" id="sharedActivities">0</span>
+                            <span class="stat-label">Tiempo Juntos</span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -224,6 +361,15 @@
     </div>
 
     <script src="script.js"></script>
+    
+    <!-- Audio elements for notifications -->
+    <audio id="addActivitySound" preload="auto">
+        <source src="data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+HtuGYdBzaH0fPTgjEGGGm98OShUgwOUarm7q1dEgxGo+LwnGEcCEOV2e7BcCIGGV/s0u2HMWsZEJrw5YYzGMjMf2zPwTJ8g6T2b99QZIrX5XhnT4I77u1w8VpbcE0KcOfAXrBtI8YZhH5HgYAL2rG01LmkEI3CdnF7lXBhPL1Z89ZRNY0tEy6Fz+iTQgUdYrLm6qBUEQk/suHQbjwIImW79OWcUwwJV1+u2KdZQYxM4JhN/MMAAI7pFd7qhwAADQFMy7iP9nAKAAY/L/FRZqhBnBTw8sZM3OLYb3ppVIrEo5vZtLx9RQ4vTPTQfm6yJQgfebTk6phWEAhGn+Hv3oYgBTGN1vHLdCcGHWa77eSiWJrAIECpC4RKyNzlGWq4Ec/tVVWm22dRMnGlPe5KYnVhOURGEAY="" type="audio/wav">
+    </audio>
+    
+    <audio id="deleteActivitySound" preload="auto">
+        <source src="data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+HtuGYdBzaH0fPTgjEGGGm98OShUgwOUarm7q1dEgxGo+LwnGEcCEOV2e7BcCIGGV/s0u2HMWsZEJrw5YYzGMjMf2zPwTJ8g6T2b99QZIrX5XhnT4I77u1w8VpbcE0KcOfAXrBtI8YZhH5HgYAL2rG01LmkEI3CdnF7lXBhPL1Z89ZRNY0tEy6Fz+iTQgUdYrLm6qBUEQk/suHQbjwIImW79OWcUwwJV1+u2KdZQYxM4JhN/MMAAI7pFd7qhwAADQFMy7iP9nAKAAY/L/FRZqhBnBTw8sZM3OLYb3ppVIrEo5vZtLx9RQ4vTPTQfm6yJQgfebTk6phWEAhGn+Hv3oYgBTGN1vHLdCcGHWa77eSiWJrAIECpC4RKyNzlGWq4Ec/tVVWm22dRMnGlPe5KYnVhOURGEAY="" type="audio/wav">
+    </audio>
 </body>
 </html>
 

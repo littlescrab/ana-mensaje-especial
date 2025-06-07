@@ -158,35 +158,119 @@ function loadPhotosFromFirebase() {
     }
 }
 
-// Weekly Planner Class
+// Advanced Weekly Planner Class
 class WeeklyPlanner {
     constructor() {
         this.activities = [];
         this.currentWeek = new Date();
+        this.currentView = 'week'; // 'week' or 'list'
+        this.categoryColors = {
+            personal: '#d63384',
+            study: '#4a7c59',
+            work: '#8b4513',
+            date: '#ff1493',
+            fitness: '#ff8c00',
+            social: '#8a2be2',
+            other: '#696969'
+        };
+        
         this.initializeElements();
         this.setupEventListeners();
         this.loadActivities();
-        this.generateCalendar();
+        this.updateWeekTitle();
+        this.generateWeekView();
+        this.updateStatistics();
     }
     
     initializeElements() {
+        // Form elements
         this.userSelect = document.getElementById('userSelect');
         this.activityInput = document.getElementById('activityInput');
         this.activityDate = document.getElementById('activityDate');
-        this.activityTime = document.getElementById('activityTime');
+        this.activityStartTime = document.getElementById('activityStartTime');
+        this.activityEndTime = document.getElementById('activityEndTime');
+        this.activityCategory = document.getElementById('activityCategory');
+        this.activityDescription = document.getElementById('activityDescription');
         this.addButton = document.getElementById('addActivity');
-        this.calendarGrid = document.getElementById('calendarGrid');
+        
+        // Navigation elements
+        this.prevWeekBtn = document.getElementById('prevWeek');
+        this.nextWeekBtn = document.getElementById('nextWeek');
+        this.todayBtn = document.getElementById('todayBtn');
+        this.currentWeekTitle = document.getElementById('currentWeekTitle');
+        
+        // View elements
+        this.weekViewBtn = document.getElementById('weekView');
+        this.listViewBtn = document.getElementById('listView');
+        this.weekViewContainer = document.getElementById('weekViewContainer');
+        this.listViewContainer = document.getElementById('listViewContainer');
+        
+        // Calendar elements
+        this.timeSlots = document.getElementById('timeSlots');
+        this.daysContainer = document.getElementById('daysContainer');
         this.activitiesList = document.getElementById('activitiesList');
         
-        // Set default date to today
+        // Filter elements
+        this.filterUser = document.getElementById('filterUser');
+        this.filterCategory = document.getElementById('filterCategory');
+        this.filterTime = document.getElementById('filterTime');
+        
+        // Statistics elements
+        this.totalActivitiesEl = document.getElementById('totalActivities');
+        this.juanActivitiesEl = document.getElementById('juanActivities');
+        this.anaActivitiesEl = document.getElementById('anaActivities');
+        this.sharedActivitiesEl = document.getElementById('sharedActivities');
+        
+        // Set default values
         const today = new Date();
         this.activityDate.value = today.toISOString().split('T')[0];
+        
+        // Set default times
+        const now = new Date();
+        const startTime = new Date(now.getTime() + 60 * 60 * 1000); // 1 hour from now
+        const endTime = new Date(startTime.getTime() + 60 * 60 * 1000); // 1 hour duration
+        
+        this.activityStartTime.value = startTime.toTimeString().slice(0, 5);
+        this.activityEndTime.value = endTime.toTimeString().slice(0, 5);
     }
     
     setupEventListeners() {
+        // Form events
         this.addButton.addEventListener('click', () => this.addActivity());
         this.activityInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') this.addActivity();
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                this.addActivity();
+            }
+        });
+        
+        // Navigation events
+        this.prevWeekBtn.addEventListener('click', () => this.changeWeek(-1));
+        this.nextWeekBtn.addEventListener('click', () => this.changeWeek(1));
+        this.todayBtn.addEventListener('click', () => this.goToCurrentWeek());
+        
+        // View switching events
+        this.weekViewBtn.addEventListener('click', () => this.switchView('week'));
+        this.listViewBtn.addEventListener('click', () => this.switchView('list'));
+        
+        // Filter events
+        if (this.filterUser) {
+            this.filterUser.addEventListener('change', () => this.updateListView());
+        }
+        if (this.filterCategory) {
+            this.filterCategory.addEventListener('change', () => this.updateListView());
+        }
+        if (this.filterTime) {
+            this.filterTime.addEventListener('change', () => this.updateListView());
+        }
+        
+        // Auto-update end time when start time changes
+        this.activityStartTime.addEventListener('change', () => {
+            if (this.activityStartTime.value && !this.activityEndTime.value) {
+                const startTime = new Date(`2000-01-01T${this.activityStartTime.value}:00`);
+                const endTime = new Date(startTime.getTime() + 60 * 60 * 1000);
+                this.activityEndTime.value = endTime.toTimeString().slice(0, 5);
+            }
         });
     }
     
@@ -194,92 +278,247 @@ class WeeklyPlanner {
         const user = this.userSelect.value;
         const title = this.activityInput.value.trim();
         const date = this.activityDate.value;
-        const time = this.activityTime.value;
+        const startTime = this.activityStartTime.value;
+        const endTime = this.activityEndTime.value;
+        const category = this.activityCategory.value;
+        const description = this.activityDescription.value.trim();
         
-        if (!title || !date) {
-            alert('Por favor completa el título y la fecha');
+        if (!title || !date || !startTime) {
+            this.showNotification('Por favor completa el título, fecha y hora de inicio', 'warning');
+            return;
+        }
+        
+        // Validate time range
+        if (endTime && startTime >= endTime) {
+            this.showNotification('La hora de fin debe ser posterior a la hora de inicio', 'warning');
             return;
         }
         
         const activity = {
-            id: Date.now(),
+            id: Date.now() + Math.random(),
             user,
             title,
+            description,
             date,
-            time: time || '00:00',
+            startTime,
+            endTime: endTime || startTime,
+            category,
             timestamp: new Date().toISOString()
         };
         
         this.activities.push(activity);
         await this.saveActivities();
-        this.generateCalendar();
-        this.updateActivitiesList();
+        this.updateCurrentView();
+        this.updateStatistics();
         
         // Clear form
-        this.activityInput.value = '';
-        this.activityTime.value = '';
+        this.clearForm();
         
-        showNotification('✅ Actividad agregada al planner');
+        // Play sound and show notification
+        this.playActivitySound('add');
+        this.showNotification('✅ Actividad agregada al planner', 'success');
     }
     
     async deleteActivity(id) {
         this.activities = this.activities.filter(activity => activity.id !== id);
         await this.saveActivities();
-        this.generateCalendar();
-        this.updateActivitiesList();
-        showNotification('🗑️ Actividad eliminada');
+        this.updateCurrentView();
+        this.updateStatistics();
+        
+        this.playActivitySound('delete');
+        this.showNotification('🗑️ Actividad eliminada', 'info');
     }
     
-    generateCalendar() {
-        const today = new Date();
-        const startOfWeek = new Date(today);
-        startOfWeek.setDate(today.getDate() - today.getDay());
+    changeWeek(direction) {
+        this.currentWeek.setDate(this.currentWeek.getDate() + (direction * 7));
+        this.updateWeekTitle();
+        this.updateCurrentView();
+    }
+    
+    goToCurrentWeek() {
+        this.currentWeek = new Date();
+        this.updateWeekTitle();
+        this.updateCurrentView();
+    }
+    
+    switchView(view) {
+        this.currentView = view;
+        
+        // Update button states
+        this.weekViewBtn.classList.toggle('active', view === 'week');
+        this.listViewBtn.classList.toggle('active', view === 'list');
+        
+        // Update container visibility
+        this.weekViewContainer.classList.toggle('active', view === 'week');
+        this.listViewContainer.classList.toggle('active', view === 'list');
+        
+        this.updateCurrentView();
+    }
+    
+    updateCurrentView() {
+        if (this.currentView === 'week') {
+            this.generateWeekView();
+        } else {
+            this.updateListView();
+        }
+    }
+    
+    updateWeekTitle() {
+        const startOfWeek = new Date(this.currentWeek);
+        startOfWeek.setDate(this.currentWeek.getDate() - this.currentWeek.getDay());
+        
+        const endOfWeek = new Date(startOfWeek);
+        endOfWeek.setDate(startOfWeek.getDate() + 6);
+        
+        const options = { day: 'numeric', month: 'short' };
+        const startStr = startOfWeek.toLocaleDateString('es-ES', options);
+        const endStr = endOfWeek.toLocaleDateString('es-ES', options);
+        const year = startOfWeek.getFullYear();
+        
+        this.currentWeekTitle.textContent = `Semana del ${startStr} - ${endStr} ${year}`;
+    }
+    
+    generateWeekView() {
+        this.generateTimeSlots();
+        this.generateDayColumns();
+    }
+    
+    generateTimeSlots() {
+        let html = '';
+        for (let hour = 6; hour <= 23; hour++) {
+            const timeStr = `${hour.toString().padStart(2, '0')}:00`;
+            html += `<div class="time-slot">${timeStr}</div>`;
+        }
+        this.timeSlots.innerHTML = html;
+    }
+    
+    generateDayColumns() {
+        const startOfWeek = new Date(this.currentWeek);
+        startOfWeek.setDate(this.currentWeek.getDate() - this.currentWeek.getDay());
         
         const days = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+        const today = new Date();
+        
         let html = '';
         
         for (let i = 0; i < 7; i++) {
             const currentDay = new Date(startOfWeek);
             currentDay.setDate(startOfWeek.getDate() + i);
             
+            const isToday = currentDay.toDateString() === today.toDateString();
             const dayActivities = this.activities.filter(activity => 
                 activity.date === currentDay.toISOString().split('T')[0]
             );
             
-            const isToday = currentDay.toDateString() === today.toDateString();
-            
             html += `
-                <div class="calendar-day ${isToday ? 'today' : ''}">
-                    <div class="day-name">${days[i]}</div>
-                    <div class="day-number">${currentDay.getDate()}</div>
-                    ${dayActivities.map(activity => `
-                        <div class="activity-item ${activity.user}">
-                            ${activity.time} - ${activity.title.substring(0, 15)}${activity.title.length > 15 ? '...' : ''}
-                        </div>
-                    `).join('')}
+                <div class="day-column">
+                    <div class="day-header ${isToday ? 'today' : ''}">
+                        <div>${days[i]}</div>
+                        <div class="day-date">${currentDay.getDate()}</div>
+                    </div>
+                    <div class="day-activities">
+                        ${this.generateHourSlots(dayActivities)}
+                    </div>
                 </div>
             `;
         }
         
-        this.calendarGrid.innerHTML = html;
+        this.daysContainer.innerHTML = html;
     }
     
-    updateActivitiesList() {
-        const sortedActivities = this.activities
-            .filter(activity => new Date(activity.date) >= new Date().setHours(0,0,0,0))
-            .sort((a, b) => {
-                const dateA = new Date(`${a.date}T${a.time}`);
-                const dateB = new Date(`${b.date}T${b.time}`);
-                return dateA - dateB;
-            })
-            .slice(0, 10); // Show next 10 activities
+    generateHourSlots(dayActivities) {
+        let html = '';
         
-        if (sortedActivities.length === 0) {
-            this.activitiesList.innerHTML = '<p style="text-align: center; color: #e8c5ca; opacity: 0.7;">No hay actividades programadas</p>';
+        for (let hour = 6; hour <= 23; hour++) {
+            const hourActivities = dayActivities.filter(activity => {
+                const activityHour = parseInt(activity.startTime.split(':')[0]);
+                return activityHour === hour;
+            });
+            
+            html += `<div class="day-hour-slot">`;
+            
+            hourActivities.forEach(activity => {
+                const categoryClass = `category-${activity.category}`;
+                const userClass = activity.user;
+                const categoryIcon = this.getCategoryIcon(activity.category);
+                
+                html += `
+                    <div class="activity-block ${userClass} ${categoryClass}" onclick="window.weeklyPlanner.showActivityDetails(${activity.id})">
+                        <div class="activity-title">${activity.title}</div>
+                        <div class="activity-time">${activity.startTime}${activity.endTime !== activity.startTime ? ' - ' + activity.endTime : ''}</div>
+                        <div class="activity-category">${categoryIcon}</div>
+                    </div>
+                `;
+            });
+            
+            html += `</div>`;
+        }
+        
+        return html;
+    }
+    
+    updateListView() {
+        const userFilter = this.filterUser?.value || 'all';
+        const categoryFilter = this.filterCategory?.value || 'all';
+        const timeFilter = this.filterTime?.value || 'all';
+        
+        let filteredActivities = [...this.activities];
+        
+        // Apply filters
+        if (userFilter !== 'all') {
+            filteredActivities = filteredActivities.filter(activity => activity.user === userFilter);
+        }
+        
+        if (categoryFilter !== 'all') {
+            filteredActivities = filteredActivities.filter(activity => activity.category === categoryFilter);
+        }
+        
+        // Apply time filter
+        const now = new Date();
+        const today = now.toISOString().split('T')[0];
+        const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+        
+        if (timeFilter === 'today') {
+            filteredActivities = filteredActivities.filter(activity => activity.date === today);
+        } else if (timeFilter === 'tomorrow') {
+            filteredActivities = filteredActivities.filter(activity => activity.date === tomorrow);
+        } else if (timeFilter === 'week') {
+            const weekStart = new Date(this.currentWeek);
+            weekStart.setDate(this.currentWeek.getDate() - this.currentWeek.getDay());
+            const weekEnd = new Date(weekStart);
+            weekEnd.setDate(weekStart.getDate() + 6);
+            
+            filteredActivities = filteredActivities.filter(activity => {
+                const activityDate = new Date(activity.date);
+                return activityDate >= weekStart && activityDate <= weekEnd;
+            });
+        } else if (timeFilter === 'upcoming') {
+            filteredActivities = filteredActivities.filter(activity => new Date(activity.date) >= now.setHours(0,0,0,0));
+        }
+        
+        // Sort activities
+        filteredActivities.sort((a, b) => {
+            const dateA = new Date(`${a.date}T${a.startTime}`);
+            const dateB = new Date(`${b.date}T${b.startTime}`);
+            return dateA - dateB;
+        });
+        
+        this.displayActivitiesList(filteredActivities);
+    }
+    
+    displayActivitiesList(activities) {
+        if (activities.length === 0) {
+            this.activitiesList.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-state-icon">📅</div>
+                    <div class="empty-state-text">No hay actividades</div>
+                    <div class="empty-state-subtext">Agrega nuevas actividades usando el formulario de arriba</div>
+                </div>
+            `;
             return;
         }
         
-        const html = sortedActivities.map(activity => {
+        const html = activities.map(activity => {
             const activityDate = new Date(activity.date);
             const formattedDate = activityDate.toLocaleDateString('es-ES', { 
                 weekday: 'short', 
@@ -287,24 +526,197 @@ class WeeklyPlanner {
                 day: 'numeric' 
             });
             
+            const categoryIcon = this.getCategoryIcon(activity.category);
+            const categoryClass = `category-${activity.category}`;
+            
             return `
-                <div class="activity-card ${activity.user}">
+                <div class="activity-card ${activity.user} ${categoryClass}">
                     <div class="activity-info">
                         <div class="activity-title">${activity.title}</div>
                         <div class="activity-details">
                             <span>📅 ${formattedDate}</span>
-                            <span>⏰ ${activity.time}</span>
-                            <span class="activity-user ${activity.user}">${activity.user === 'juan' ? '👨 Juan' : '👩 Ana'}</span>
+                            <span>⏰ ${activity.startTime}${activity.endTime !== activity.startTime ? ' - ' + activity.endTime : ''}</span>
                         </div>
+                        <div class="activity-meta">
+                            <span class="activity-user ${activity.user}">${activity.user === 'juan' ? '👨 Juan' : '👩 Ana'}</span>
+                            <span class="activity-category-badge">${categoryIcon} ${this.getCategoryName(activity.category)}</span>
+                        </div>
+                        ${activity.description ? `<div class="activity-description">${activity.description}</div>` : ''}
                     </div>
-                    <button class="delete-activity" onclick="window.weeklyPlanner.deleteActivity(${activity.id})">
-                        🗑️
-                    </button>
+                    <div class="activity-actions">
+                        <button class="edit-activity" onclick="window.weeklyPlanner.editActivity(${activity.id})">
+                            ✏️
+                        </button>
+                        <button class="delete-activity" onclick="window.weeklyPlanner.deleteActivity(${activity.id})">
+                            🗑️
+                        </button>
+                    </div>
                 </div>
             `;
         }).join('');
         
         this.activitiesList.innerHTML = html;
+    }
+    
+    updateStatistics() {
+        const total = this.activities.length;
+        const juan = this.activities.filter(a => a.user === 'juan').length;
+        const ana = this.activities.filter(a => a.user === 'ana').length;
+        
+        // Calculate shared activities (activities on the same day)
+        const sharedDays = new Set();
+        const juanDates = new Set(this.activities.filter(a => a.user === 'juan').map(a => a.date));
+        const anaDates = new Set(this.activities.filter(a => a.user === 'ana').map(a => a.date));
+        
+        juanDates.forEach(date => {
+            if (anaDates.has(date)) {
+                sharedDays.add(date);
+            }
+        });
+        
+        this.totalActivitiesEl.textContent = total;
+        this.juanActivitiesEl.textContent = juan;
+        this.anaActivitiesEl.textContent = ana;
+        this.sharedActivitiesEl.textContent = sharedDays.size;
+    }
+    
+    getCategoryIcon(category) {
+        const icons = {
+            personal: '💕',
+            study: '📚',
+            work: '💼',
+            date: '🌹',
+            fitness: '💪',
+            social: '👥',
+            other: '🔸'
+        };
+        return icons[category] || icons.other;
+    }
+    
+    getCategoryName(category) {
+        const names = {
+            personal: 'Personal',
+            study: 'Estudio',
+            work: 'Trabajo',
+            date: 'Cita',
+            fitness: 'Ejercicio',
+            social: 'Social',
+            other: 'Otro'
+        };
+        return names[category] || names.other;
+    }
+    
+    clearForm() {
+        this.activityInput.value = '';
+        this.activityDescription.value = '';
+        
+        // Reset to current date and time
+        const now = new Date();
+        this.activityDate.value = now.toISOString().split('T')[0];
+        
+        const startTime = new Date(now.getTime() + 60 * 60 * 1000);
+        const endTime = new Date(startTime.getTime() + 60 * 60 * 1000);
+        
+        this.activityStartTime.value = startTime.toTimeString().slice(0, 5);
+        this.activityEndTime.value = endTime.toTimeString().slice(0, 5);
+    }
+    
+    playActivitySound(type) {
+        try {
+            const soundId = type === 'add' ? 'addActivitySound' : 'deleteActivitySound';
+            const audio = document.getElementById(soundId);
+            if (audio) {
+                audio.currentTime = 0;
+                audio.play().catch(e => console.log('Sound play failed:', e));
+            } else {
+                // Fallback: create beep sound
+                this.createBeepSound(type === 'add' ? [800, 1000] : [400, 200]);
+            }
+        } catch (error) {
+            console.log('Sound error:', error);
+        }
+    }
+    
+    createBeepSound(frequencies) {
+        try {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            frequencies.forEach((freq, index) => {
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                oscillator.frequency.setValueAtTime(freq, audioContext.currentTime + index * 0.1);
+                gainNode.gain.setValueAtTime(0.1, audioContext.currentTime + index * 0.1);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + index * 0.1 + 0.1);
+                
+                oscillator.start(audioContext.currentTime + index * 0.1);
+                oscillator.stop(audioContext.currentTime + index * 0.1 + 0.1);
+            });
+        } catch (error) {
+            console.log('Beep sound error:', error);
+        }
+    }
+    
+    showNotification(message, type = 'info') {
+        const notification = document.createElement('div');
+        notification.className = `notification ${type}`;
+        notification.textContent = message;
+        
+        document.body.appendChild(notification);
+        
+        // Trigger animation
+        setTimeout(() => {
+            notification.classList.add('show');
+        }, 100);
+        
+        // Remove notification
+        setTimeout(() => {
+            notification.classList.remove('show');
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.parentNode.removeChild(notification);
+                }
+            }, 300);
+        }, 3000);
+    }
+    
+    showActivityDetails(id) {
+        const activity = this.activities.find(a => a.id === id);
+        if (!activity) return;
+        
+        // For now, just show an alert with activity details
+        const details = `
+            📝 ${activity.title}
+            👤 ${activity.user === 'juan' ? 'Juan' : 'Ana'}
+            📅 ${new Date(activity.date).toLocaleDateString('es-ES')}
+            ⏰ ${activity.startTime}${activity.endTime !== activity.startTime ? ' - ' + activity.endTime : ''}
+            🏷️ ${this.getCategoryName(activity.category)}
+            ${activity.description ? '\n📄 ' + activity.description : ''}
+        `;
+        
+        alert(details);
+    }
+    
+    editActivity(id) {
+        const activity = this.activities.find(a => a.id === id);
+        if (!activity) return;
+        
+        // Fill form with activity data
+        this.userSelect.value = activity.user;
+        this.activityInput.value = activity.title;
+        this.activityDate.value = activity.date;
+        this.activityStartTime.value = activity.startTime;
+        this.activityEndTime.value = activity.endTime;
+        this.activityCategory.value = activity.category;
+        this.activityDescription.value = activity.description || '';
+        
+        // Remove the activity (it will be re-added when form is submitted)
+        this.deleteActivity(id);
+        
+        // Scroll to form
+        document.querySelector('.add-activity-form').scrollIntoView({ behavior: 'smooth' });
     }
     
     async saveActivities() {
@@ -349,8 +761,8 @@ class WeeklyPlanner {
             this.activities = stored ? JSON.parse(stored) : [];
         }
         
-        this.generateCalendar();
-        this.updateActivitiesList();
+        this.updateCurrentView();
+        this.updateStatistics();
     }
 }
 
@@ -441,8 +853,8 @@ function showSection(sectionName) {
         
         // Initialize planner when section is shown
         if (sectionName === 'planner' && window.weeklyPlanner) {
-            window.weeklyPlanner.generateCalendar();
-            window.weeklyPlanner.updateActivitiesList();
+            window.weeklyPlanner.updateCurrentView();
+            window.weeklyPlanner.updateStatistics();
         }
     } else {
         document.querySelector('.menu').style.display = 'grid';
