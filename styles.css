@@ -6,11 +6,37 @@
 
 body {
     font-family: 'Poppins', sans-serif;
-    background: linear-gradient(135deg, #1a0d2e 0%, #2d1b3d 25%, #4a1942 50%, #6b1e3f 75%, #8b2635 100%);
+    background: linear-gradient(135deg, #0a0a0a 0%, #1a0a1a 25%, #2d0d2d 50%, #3d1a2d 75%, #4d1a1a 100%);
     min-height: 100vh;
-    color: #e8e6e3;
+    color: #f0f0f0;
     position: relative;
     overflow-x: hidden;
+}
+
+/* Gerbera floating animation */
+.gerbera-float {
+    position: fixed;
+    font-size: 2em;
+    animation: floatGerbera 15s infinite linear;
+    z-index: -1;
+    opacity: 0.3;
+}
+
+@keyframes floatGerbera {
+    0% {
+        transform: translateY(100vh) rotate(0deg);
+        opacity: 0;
+    }
+    10% {
+        opacity: 0.3;
+    }
+    90% {
+        opacity: 0.3;
+    }
+    100% {
+        transform: translateY(-100px) rotate(360deg);
+        opacity: 0;
+    }
 }
 
 /* Dark romantic background effects */

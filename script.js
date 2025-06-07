@@ -197,8 +197,10 @@ function initializeApp() {
     });
 
     // Proposal section events
-    document.getElementById('saveMessage').addEventListener('click', saveMessage);
-    document.getElementById('clearMessage').addEventListener('click', clearMessage);
+    const saveBtn = document.getElementById('saveMessage');
+    const clearBtn = document.getElementById('clearMessage');
+    if (saveBtn) saveBtn.addEventListener('click', saveMessage);
+    if (clearBtn) clearBtn.addEventListener('click', clearMessage);
 
     // Album section events
     document.getElementById('photoInput').addEventListener('change', handlePhotoUpload);
@@ -213,6 +215,10 @@ function initializeApp() {
 
     // Initialize timer display
     updateTimerDisplay();
+    
+    // Load special message and start gerberas animation
+    loadSpecialMessage();
+    createFloatingGerberas();
 }
 
 function showSection(sectionName) {
@@ -593,6 +599,168 @@ function showNotification(message) {
             document.head.removeChild(style);
         }, 300);
     }, 3000);
+}
+
+// === GERBERAS ANIMATION === //
+// Load special message from txt file
+async function loadSpecialMessage() {
+    try {
+        const response = await fetch('./mensaje-para-ana.txt');
+        if (response.ok) {
+            const messageText = await response.text();
+            // Replace the letter content with the loaded message
+            const letterContent = document.querySelector('.letter-content');
+            if (letterContent && messageText.trim()) {
+                // Split message into paragraphs and format them
+                const paragraphs = messageText.split('\n\n').filter(p => p.trim());
+                let formattedMessage = '';
+                
+                paragraphs.forEach((paragraph, index) => {
+                    if (paragraph.includes('¿Quieres ser mi enamorada?')) {
+                        formattedMessage += `
+                            <div class="big-question">
+                                <h2 class="question-text">${paragraph.trim()}</h2>
+                                <div class="question-buttons">
+                                    <button id="yesButton" class="answer-btn yes-btn">💕 ¡SÍ! 💕</button>
+                                    <button id="noButton" class="answer-btn no-btn">💔 No...</button>
+                                </div>
+                            </div>
+                        `;
+                    } else if (paragraph.includes('Con todo mi cariño')) {
+                        formattedMessage += `
+                            <p class="letter-paragraph signature">
+                                ${paragraph.replace('Juan 💕🌻', '<span class="signature-name">Juan 💕🌻</span>')}
+                            </p>
+                        `;
+                    } else {
+                        const highlightedText = paragraph.replace(/Ana/g, '<span class="highlight">Ana</span>')
+                                                        .replace(/gerberas/g, '<span class="highlight">🌻 gerberas 🌻</span>');
+                        formattedMessage += `<p class="letter-paragraph">${highlightedText}</p>`;
+                    }
+                });
+                
+                letterContent.innerHTML = formattedMessage;
+                console.log('✅ Mensaje especial cargado desde archivo');
+                
+                // Re-attach event listeners for answer buttons
+                setupProposalEventListeners();
+            }
+        }
+    } catch (error) {
+        console.log('ℹ️ No se pudo cargar el mensaje especial desde archivo, usando el predeterminado');
+        setupProposalEventListeners();
+    }
+}
+
+// Setup proposal event listeners
+function setupProposalEventListeners() {
+    const yesButton = document.getElementById('yesButton');
+    const noButton = document.getElementById('noButton');
+    const responseArea = document.getElementById('responseArea');
+    
+    if (yesButton) {
+        yesButton.addEventListener('click', function() {
+            responseArea.className = 'response-area yes-response';
+            responseArea.innerHTML = `
+                <h3>¡Sí Acepto! 💕</h3>
+                <p>¡Este es el momento más feliz de mi vida! 🌻💖</p>
+                <div class="hearts-animation">
+                    <span class="heart">💖</span>
+                    <span class="heart">🌻</span>
+                    <span class="heart">💕</span>
+                    <span class="heart">🌺</span>
+                    <span class="heart">💝</span>
+                </div>
+            `;
+            responseArea.classList.remove('hidden');
+            createGerberaExplosion();
+        });
+    }
+    
+    if (noButton) {
+        noButton.addEventListener('click', function() {
+            responseArea.className = 'response-area no-response';
+            responseArea.innerHTML = `
+                <h3>Entiendo... 💙</h3>
+                <p>Respeto tu decisión y siempre seré tu amigo.</p>
+            `;
+            responseArea.classList.remove('hidden');
+        });
+    }
+}
+
+// Create floating gerberas animation
+function createFloatingGerberas() {
+    const container = document.getElementById('gerberasContainer');
+    if (!container) return;
+    
+    const gerberas = ['🌻', '🌺', '🌼', '🌷', '🌸'];
+    
+    function addGerbera() {
+        const gerbera = document.createElement('div');
+        gerbera.className = 'gerbera-float';
+        gerbera.textContent = gerberas[Math.floor(Math.random() * gerberas.length)];
+        gerbera.style.left = Math.random() * 100 + 'vw';
+        gerbera.style.animationDuration = (Math.random() * 10 + 10) + 's';
+        gerbera.style.opacity = Math.random() * 0.3 + 0.1;
+        
+        container.appendChild(gerbera);
+        
+        // Remove gerbera after animation
+        setTimeout(() => {
+            if (gerbera.parentNode) {
+                gerbera.parentNode.removeChild(gerbera);
+            }
+        }, 20000);
+    }
+    
+    // Add gerberas periodically
+    setInterval(addGerbera, 3000);
+    // Add initial gerberas
+    for (let i = 0; i < 3; i++) {
+        setTimeout(addGerbera, i * 1000);
+    }
+}
+
+// Create gerbera explosion effect
+function createGerberaExplosion() {
+    const container = document.getElementById('gerberasContainer');
+    if (!container) return;
+    
+    const gerberas = ['🌻', '🌺', '🌼', '🌷', '🌸', '💖', '💕', '💝'];
+    
+    for (let i = 0; i < 20; i++) {
+        const gerbera = document.createElement('div');
+        gerbera.textContent = gerberas[Math.floor(Math.random() * gerberas.length)];
+        gerbera.style.position = 'fixed';
+        gerbera.style.left = '50%';
+        gerbera.style.top = '50%';
+        gerbera.style.fontSize = '2em';
+        gerbera.style.pointerEvents = 'none';
+        gerbera.style.zIndex = '1000';
+        
+        const angle = (i / 20) * 2 * Math.PI;
+        const distance = Math.random() * 300 + 100;
+        const finalX = Math.cos(angle) * distance;
+        const finalY = Math.sin(angle) * distance;
+        
+        gerbera.style.transform = `translate(-50%, -50%)`;
+        container.appendChild(gerbera);
+        
+        // Animate explosion
+        setTimeout(() => {
+            gerbera.style.transition = 'all 2s ease-out';
+            gerbera.style.transform = `translate(${finalX}px, ${finalY}px) rotate(${Math.random() * 720}deg) scale(0)`;
+            gerbera.style.opacity = '0';
+        }, 50);
+        
+        // Remove after animation
+        setTimeout(() => {
+            if (gerbera.parentNode) {
+                gerbera.parentNode.removeChild(gerbera);
+            }
+        }, 2500);
+    }
 }
 
 // === KEYBOARD SHORTCUTS === //
