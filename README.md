@@ -6,9 +6,6 @@ Un espacio compartido y sincronizado en tiempo real creado con amor donde tú y 
 📸 **Compartir fotos** - Álbum compartido en tiempo real
 ⏰ **Usar el Pomodoro timer** - Para concentrarse juntos
 
-## 🌐 Cómo acceder
-
-**Link público:** https://littlescrab.github.io/ana-mensaje-especial
 
 ## ✅ Lo que está configurado
 
