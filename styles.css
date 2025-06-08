@@ -1,7 +1,100 @@
+:root {
+    /* Transition for smooth theme switching */
+    transition: all 0.3s ease;
+}
+
+/* === DARK THEME (Default) === */
+[data-theme="dark"] {
+    --bg-primary: linear-gradient(135deg, #0a0a0a 0%, #1a0a1a 25%, #2d0d2d 50%, #3d1a2d 75%, #4d1a1a 100%);
+    --bg-secondary: linear-gradient(135deg, rgba(26, 13, 46, 0.95) 0%, rgba(45, 27, 61, 0.9) 100%);
+    --bg-tertiary: linear-gradient(135deg, rgba(45, 27, 61, 0.8), rgba(74, 25, 66, 0.6));
+    --bg-card: linear-gradient(135deg, rgba(26, 13, 46, 0.9) 0%, rgba(45, 27, 61, 0.8) 100%);
+    --bg-menu-item: linear-gradient(135deg, rgba(26, 13, 46, 0.9) 0%, rgba(45, 27, 61, 0.8) 100%);
+    --bg-menu-item-hover: linear-gradient(135deg, rgba(45, 27, 61, 0.95) 0%, rgba(74, 25, 66, 0.9) 100%);
+    
+    --text-primary: #f0f0f0;
+    --text-secondary: #e8e6e3;
+    --text-tertiary: #e8c5ca;
+    --text-muted: #888;
+    
+    --accent-primary: #d63384;
+    --accent-secondary: #8b2635;
+    --accent-tertiary: #f8d7da;
+    
+    --border-primary: rgba(248, 215, 218, 0.1);
+    --border-secondary: rgba(248, 215, 218, 0.2);
+    --border-accent: rgba(214, 51, 132, 0.3);
+    
+    --shadow-light: 0 10px 25px rgba(0,0,0,0.4);
+    --shadow-medium: 0 20px 50px rgba(0,0,0,0.6);
+    --shadow-heavy: 0 25px 60px rgba(0,0,0,0.8);
+    
+    --glow-accent: 0 0 30px rgba(214, 51, 132, 0.5);
+    --glow-soft: 0 0 20px rgba(214, 51, 132, 0.3);
+}
+
+/* === LIGHT THEME - GARDEN FLORAL === */
+/* 🌸 Inspirado en jardines de flores, teoría de color naturaleza */
+[data-theme="light"] {
+    /* 🌿 Fondos Garden - Verde naturaleza con toques florales */
+    --bg-primary: linear-gradient(135deg, 
+        #f0f8f0 0%,      /* Verde menta muy suave */
+        #e8f5e8 25%,     /* Verde césped claro */
+        #f5f0ff 50%,     /* Lavanda muy suave */
+        #fff0f5 75%,     /* Rosa pétalo */
+        #f0fff0 100%);   /* Verde miel de abeja */
+    
+    --bg-secondary: linear-gradient(135deg, 
+        rgba(240, 255, 240, 0.95) 0%,     /* Honeydew con transparencia */
+        rgba(245, 255, 250, 0.9) 100%);   /* Mint cream */
+    
+    --bg-tertiary: linear-gradient(135deg, 
+        rgba(255, 250, 250, 0.9),         /* Snow blanco cálido */
+        rgba(240, 248, 255, 0.8));        /* Alice blue suave */
+    
+    --bg-card: linear-gradient(135deg, 
+        rgba(255, 255, 255, 0.95) 0%,     /* Blanco puro con transparencia */
+        rgba(248, 255, 248, 0.9) 100%);   /* Verde menta cristalino */
+    
+    --bg-menu-item: linear-gradient(135deg, 
+        rgba(250, 255, 250, 0.9) 0%,      /* Verde menta claro */
+        rgba(255, 250, 255, 0.85) 100%);  /* Lavanda blush */
+    
+    --bg-menu-item-hover: linear-gradient(135deg, 
+        rgba(240, 255, 240, 0.95) 0%,     /* Honeydew activo */
+        rgba(255, 240, 245, 0.9) 100%);   /* Lavanda rosa */
+    
+    /* 🌺 Textos Garden - Naturales y legibles */
+    --text-primary: #2d5016;      /* Verde bosque oscuro */
+    --text-secondary: #4a7c20;    /* Verde hoja */
+    --text-tertiary: #6b8e23;     /* Olive drab - verde oliva natural */
+    --text-muted: #8fbc8f;        /* Dark sea green - verde mar */
+    
+    /* 🌹 Acentos Garden - Rosa gerbera con complementarios */
+    --accent-primary: #e75480;     /* Deep pink - rosa gerbera */
+    --accent-secondary: #98fb98;   /* Pale green - verde complementario */
+    --accent-tertiary: #ff69b4;    /* Hot pink - rosa vibrante */
+    
+    /* 🍃 Bordes Garden - Suaves y naturales */
+    --border-primary: rgba(107, 142, 35, 0.15);    /* Olive drab suave */
+    --border-secondary: rgba(72, 124, 32, 0.25);   /* Verde hoja con transparencia */
+    --border-accent: rgba(231, 84, 128, 0.35);     /* Rosa gerbera transparente */
+    
+    /* 🌤️ Sombras Garden - Suaves como rocío matutino */
+    --shadow-light: 0 8px 20px rgba(107, 142, 35, 0.08);    /* Verde oliva muy suave */
+    --shadow-medium: 0 15px 35px rgba(72, 124, 32, 0.12);   /* Verde hoja suave */
+    --shadow-heavy: 0 20px 45px rgba(45, 80, 22, 0.15);     /* Verde bosque suave */
+    
+    /* ✨ Efectos Garden - Resplandor natural */
+    --glow-accent: 0 0 25px rgba(231, 84, 128, 0.25);       /* Resplandor rosa gerbera */
+    --glow-soft: 0 0 15px rgba(152, 251, 152, 0.3);         /* Resplandor verde suave */
+}
+
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
+    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
 }
 
 /* Smooth Animations */
@@ -53,11 +146,12 @@
 
 body {
     font-family: 'Cascadia Mono', monospace;
-    background: linear-gradient(135deg, #0a0a0a 0%, #1a0a1a 25%, #2d0d2d 50%, #3d1a2d 75%, #4d1a1a 100%);
+    background: var(--bg-primary);
     min-height: 100vh;
-    color: #f0f0f0;
+    color: var(--text-primary);
     position: relative;
     overflow-x: hidden;
+    transition: all 0.3s ease;
 }
 
 /* Gerbera floating animation */
@@ -332,11 +426,58 @@ body::before {
     overflow-x: hidden;
 }
 
+/* === THEME TOGGLE BUTTON === */
+.header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+}
+
+.header-controls {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.theme-toggle {
+    background: var(--bg-card);
+    color: var(--text-secondary);
+    border: 2px solid var(--border-accent);
+    padding: 10px 15px;
+    border-radius: 12px;
+    cursor: pointer;
+    font-size: 0.9em;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    box-shadow: var(--shadow-light);
+    backdrop-filter: blur(10px);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    text-shadow: none;
+    min-width: 110px;
+    justify-content: center;
+}
+
+.theme-toggle:hover {
+    background: var(--bg-menu-item-hover);
+    transform: translateY(-2px) scale(1.05);
+    box-shadow: var(--shadow-medium);
+    border-color: var(--accent-primary);
+    color: var(--accent-tertiary);
+}
+
+.theme-toggle:active {
+    transform: translateY(0) scale(1.02);
+}
+
 .header {
     text-align: center;
     margin-bottom: 40px;
-    color: #f8d7da;
+    color: var(--accent-tertiary);
     position: relative;
+    padding: 20px;
 }
 
 .header::after {
@@ -355,20 +496,19 @@ body::before {
     font-family: 'Dancing Script', cursive;
     font-size: 3.5em;
     margin-bottom: 10px;
-    background: linear-gradient(135deg, #f8d7da 0%, #d63384 50%, #8b2635 100%);
+    background: linear-gradient(135deg, var(--accent-tertiary) 0%, var(--accent-primary) 50%, var(--accent-secondary) 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
-    text-shadow: 0 0 30px rgba(214, 51, 132, 0.5);
-    filter: drop-shadow(2px 2px 4px rgba(0,0,0,0.5));
+    filter: drop-shadow(2px 2px 4px rgba(0,0,0,0.3));
 }
 
 .header .subtitle {
     font-size: 1.2em;
     opacity: 0.9;
     font-weight: 300;
-    color: #e8c5ca;
-    text-shadow: 0 1px 3px rgba(0,0,0,0.7);
+    color: var(--text-tertiary);
+    text-shadow: 0 1px 3px rgba(0,0,0,0.3);
 }
 
 /* Backup Options Styling */
@@ -419,15 +559,15 @@ body::before {
 }
 
 .menu-item {
-    background: linear-gradient(135deg, rgba(26, 13, 46, 0.9) 0%, rgba(45, 27, 61, 0.8) 100%);
+    background: var(--bg-menu-item);
     padding: 25px 20px;
     border-radius: 16px;
     text-align: center;
     cursor: pointer;
     transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 10px 25px rgba(0,0,0,0.4), inset 0 1px 0 rgba(248, 215, 218, 0.1);
+    box-shadow: var(--shadow-light), inset 0 1px 0 var(--border-primary);
     backdrop-filter: blur(20px);
-    border: 1px solid rgba(248, 215, 218, 0.1);
+    border: 1px solid var(--border-primary);
     position: relative;
     overflow: hidden;
 }
@@ -445,9 +585,9 @@ body::before {
 
 .menu-item:hover {
     transform: translateY(-15px) scale(1.02);
-    box-shadow: 0 25px 50px rgba(0,0,0,0.6), 0 0 30px rgba(214, 51, 132, 0.3);
-    background: linear-gradient(135deg, rgba(45, 27, 61, 0.95) 0%, rgba(74, 25, 66, 0.9) 100%);
-    border-color: rgba(214, 51, 132, 0.3);
+    box-shadow: var(--shadow-medium), var(--glow-soft);
+    background: var(--bg-menu-item-hover);
+    border-color: var(--border-accent);
 }
 
 .menu-item:hover::before {
@@ -527,12 +667,12 @@ body::before {
 .menu-item h3 {
     font-size: 1.2em;
     margin-bottom: 8px;
-    color: #f8d7da;
-    text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+    color: var(--accent-tertiary);
+    text-shadow: 0 1px 3px rgba(0,0,0,0.3);
 }
 
 .menu-item p {
-    color: #e8c5ca;
+    color: var(--text-tertiary);
     font-weight: 300;
     opacity: 0.9;
     font-size: 0.9em;
@@ -540,13 +680,13 @@ body::before {
 
 /* Section Styles - Dark Romance */
 .section {
-    background: linear-gradient(135deg, rgba(26, 13, 46, 0.95) 0%, rgba(45, 27, 61, 0.9) 100%);
+    background: var(--bg-secondary);
     border-radius: 0;
     padding: 30px;
     backdrop-filter: blur(20px);
-    box-shadow: 0 20px 50px rgba(0,0,0,0.6), inset 0 1px 0 rgba(248, 215, 218, 0.1);
-    border: 1px solid rgba(248, 215, 218, 0.1);
-    color: #e8e6e3;
+    box-shadow: var(--shadow-medium), inset 0 1px 0 var(--border-primary);
+    border: 1px solid var(--border-primary);
+    color: var(--text-secondary);
     width: 100vw;
     max-width: 100vw;
     box-sizing: border-box;
@@ -578,34 +718,34 @@ body::before {
 }
 
 .back-btn {
-    background: linear-gradient(135deg, #8b2635 0%, #d63384 100%);
-    color: #f8d7da;
-    border: 1px solid rgba(248, 215, 218, 0.3);
+    background: linear-gradient(135deg, var(--accent-secondary) 0%, var(--accent-primary) 100%);
+    color: var(--accent-tertiary);
+    border: 1px solid var(--border-secondary);
     padding: 12px 24px;
     border-radius: 12px;
     cursor: pointer;
     font-size: 1em;
     margin-right: 20px;
     transition: all 0.4s ease;
-    box-shadow: 0 5px 15px rgba(139, 38, 53, 0.4);
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+    box-shadow: var(--shadow-light);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
 .back-btn:hover {
-    background: linear-gradient(135deg, #d63384 0%, #8b2635 100%);
+    background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
     transform: translateY(-3px) scale(1.05);
-    box-shadow: 0 8px 25px rgba(214, 51, 132, 0.5);
-    border-color: rgba(248, 215, 218, 0.5);
+    box-shadow: var(--shadow-medium);
+    border-color: var(--border-accent);
 }
 
 .section-header h2 {
     font-family: 'Dancing Script', cursive;
     font-size: 2.5em;
-    background: linear-gradient(135deg, #f8d7da 0%, #d63384 100%);
+    background: linear-gradient(135deg, var(--accent-tertiary) 0%, var(--accent-primary) 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
-    text-shadow: 0 0 20px rgba(214, 51, 132, 0.3);
+    filter: drop-shadow(0 0 20px rgba(214, 51, 132, 0.2));
 }
 
 /* Proposal Section */
@@ -616,36 +756,36 @@ body::before {
 }
 
 .message-area h3, .saved-messages h3 {
-    color: #f8d7da;
+    color: var(--accent-tertiary);
     margin-bottom: 20px;
     font-size: 1.3em;
-    text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+    text-shadow: 0 1px 3px rgba(0,0,0,0.3);
 }
 
 #specialMessage {
     width: 100%;
     height: 300px;
     padding: 20px;
-    border: 2px solid rgba(214, 51, 132, 0.3);
+    border: 2px solid var(--border-accent);
     border-radius: 15px;
     font-family: 'Cascadia Mono', monospace;
     font-size: 1em;
     resize: vertical;
     transition: all 0.3s ease;
-    background: rgba(26, 13, 46, 0.8);
-    color: #e8e6e3;
+    background: var(--bg-card);
+    color: var(--text-secondary);
     backdrop-filter: blur(10px);
 }
 
 #specialMessage:focus {
     outline: none;
-    border-color: #d63384;
-    box-shadow: 0 0 20px rgba(214, 51, 132, 0.3);
-    background: rgba(45, 27, 61, 0.8);
+    border-color: var(--accent-primary);
+    box-shadow: var(--glow-soft);
+    background: var(--bg-tertiary);
 }
 
 #specialMessage::placeholder {
-    color: rgba(232, 230, 227, 0.6);
+    color: var(--text-muted);
 }
 
 .message-actions {
@@ -1104,11 +1244,11 @@ body::before {
 .love-letter {
     max-width: 700px;
     margin: 0 auto;
-    background: linear-gradient(135deg, rgba(248, 215, 218, 0.1) 0%, rgba(139, 38, 53, 0.1) 100%);
+    background: var(--bg-card);
     border-radius: 20px;
     padding: 40px;
-    border: 2px solid rgba(248, 215, 218, 0.3);
-    box-shadow: 0 10px 30px rgba(139, 38, 53, 0.4);
+    border: 2px solid var(--border-secondary);
+    box-shadow: var(--shadow-light);
     backdrop-filter: blur(10px);
 }
 
@@ -1120,9 +1260,9 @@ body::before {
 .letter-header h3 {
     font-family: 'Dancing Script', cursive;
     font-size: 2.5em;
-    color: #f8d7da;
+    color: var(--accent-tertiary);
     margin-bottom: 15px;
-    text-shadow: 0 2px 10px rgba(214, 51, 132, 0.5);
+    filter: drop-shadow(0 2px 10px rgba(214, 51, 132, 0.3));
 }
 
 .hearts-animation {
@@ -1156,15 +1296,15 @@ body::before {
 
 .letter-paragraph {
     margin-bottom: 25px;
-    color: #e8e6e3;
+    color: var(--text-secondary);
     text-align: justify;
     padding: 0 10px;
 }
 
 .highlight {
-    color: #f8d7da;
+    color: var(--accent-tertiary);
     font-weight: 600;
-    text-shadow: 0 1px 3px rgba(214, 51, 132, 0.5);
+    filter: drop-shadow(0 1px 3px rgba(214, 51, 132, 0.3));
     font-size: 1.1em;
 }
 
@@ -1181,9 +1321,9 @@ body::before {
 .question-text {
     font-family: 'Dancing Script', cursive;
     font-size: 2.2em;
-    color: #f8d7da;
+    color: var(--accent-tertiary);
     margin-bottom: 25px;
-    text-shadow: 0 2px 10px rgba(214, 51, 132, 0.7);
+    filter: drop-shadow(0 2px 10px rgba(214, 51, 132, 0.4));
     line-height: 1.3;
 }
 
@@ -1245,7 +1385,7 @@ body::before {
 .signature-name {
     font-family: 'Dancing Script', cursive;
     font-size: 1.4em;
-    color: #f8d7da;
+    color: var(--accent-tertiary);
     font-weight: 700;
 }
 
@@ -2525,8 +2665,188 @@ body::before {
     padding: 20px;
 }
 
+/* === GARDEN THEME SPECIFIC ADJUSTMENTS === */
+/* 🌸 Elementos flotantes más naturales */
+[data-theme="light"] .gerbera-float {
+    opacity: 0.4;                    /* Más visible en tema garden */
+    filter: hue-rotate(30deg);       /* Tinte más cálido y natural */
+}
+
+/* 🕐 Timer con estilo garden */
+[data-theme="light"] .timer-circle {
+    border-color: var(--accent-secondary);      /* Verde complementario */
+    background: var(--bg-card);
+    box-shadow: var(--shadow-light), inset 0 2px 8px rgba(152, 251, 152, 0.2);
+}
+
+[data-theme="light"] .timer-circle.active {
+    border-color: #32cd32;                      /* Lime green natural */
+    box-shadow: var(--shadow-medium), 0 0 30px rgba(50, 205, 50, 0.4);
+    background: linear-gradient(135deg, 
+        rgba(240, 255, 240, 0.95) 0%, 
+        rgba(255, 255, 255, 0.9) 100%);
+}
+
+/* 📸 Fotos con marco garden */
+[data-theme="light"] .photo-item {
+    box-shadow: var(--shadow-light);
+    border: 3px solid rgba(152, 251, 152, 0.3);  /* Marco verde suave */
+    border-radius: 15px;
+    overflow: hidden;
+}
+
+[data-theme="light"] .photo-item:hover {
+    box-shadow: var(--shadow-medium);
+    border-color: var(--accent-primary);         /* Rosa gerbera al hover */
+    transform: scale(1.03) rotate(1deg);         /* Efecto natural */
+}
+
+/* 📅 Actividades con colores garden */
+[data-theme="light"] .activity-block {
+    background: linear-gradient(135deg, 
+        rgba(231, 84, 128, 0.8) 0%,     /* Rosa gerbera */
+        rgba(255, 105, 180, 0.7) 100%); /* Hot pink */
+    color: white;
+    text-shadow: 0 1px 3px rgba(45, 80, 22, 0.6);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    box-shadow: var(--shadow-light);
+}
+
+[data-theme="light"] .activity-block.juan {
+    background: linear-gradient(135deg, 
+        rgba(72, 124, 32, 0.8) 0%,      /* Verde hoja */
+        rgba(107, 142, 35, 0.7) 100%);  /* Olive drab */
+    color: white;
+    text-shadow: 0 1px 3px rgba(45, 80, 22, 0.8);
+}
+
+/* 💻 Code accent garden style */
+[data-theme="light"] .code-accent {
+    background: linear-gradient(135deg, 
+        rgba(231, 84, 128, 0.85) 0%,    /* Rosa gerbera */
+        rgba(152, 251, 152, 0.7) 100%); /* Verde complementario */
+    color: white;
+    border: 2px solid rgba(255, 255, 255, 0.4);
+    box-shadow: var(--shadow-light);
+    text-shadow: 0 1px 2px rgba(45, 80, 22, 0.6);
+}
+
+/* 🌿 Fondos adicionales para elementos específicos */
+[data-theme="light"] .love-letter {
+    background: linear-gradient(135deg, 
+        rgba(255, 255, 255, 0.95) 0%, 
+        rgba(240, 255, 240, 0.9) 100%);
+    border: 3px solid rgba(231, 84, 128, 0.2);
+    box-shadow: var(--shadow-medium), 
+                inset 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+
+/* 🌺 Botones especiales garden */
+[data-theme="light"] .theme-toggle {
+    background: linear-gradient(135deg, 
+        rgba(240, 255, 240, 0.9) 0%, 
+        rgba(255, 240, 245, 0.8) 100%);
+    border-color: var(--accent-secondary);
+    color: var(--text-primary);
+    box-shadow: var(--shadow-light), 
+                inset 0 2px 4px rgba(152, 251, 152, 0.3);
+}
+
+[data-theme="light"] .theme-toggle:hover {
+    background: linear-gradient(135deg, 
+        rgba(255, 240, 245, 0.95) 0%, 
+        rgba(240, 255, 240, 0.9) 100%);
+    border-color: var(--accent-primary);
+    color: var(--accent-primary);
+    box-shadow: var(--shadow-medium), var(--glow-soft);
+}
+
+/* 🌸 Menu items garden style */
+[data-theme="light"] .menu-item {
+    border: 2px solid rgba(152, 251, 152, 0.2);
+    box-shadow: var(--shadow-light), 
+                inset 0 2px 8px rgba(255, 255, 255, 0.6);
+}
+
+[data-theme="light"] .menu-item:hover {
+    border-color: var(--accent-primary);
+    box-shadow: var(--shadow-medium), var(--glow-accent);
+}
+
+/* 🌻 Header garden style */
+[data-theme="light"] .header h1 {
+    background: linear-gradient(135deg, 
+        var(--accent-primary) 0%, 
+        var(--accent-secondary) 30%,
+        var(--text-primary) 60%, 
+        var(--accent-tertiary) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    filter: drop-shadow(2px 2px 4px rgba(107, 142, 35, 0.3));
+}
+
+/* 🍃 Animations específicas garden */
+@keyframes gardenGlow {
+    0%, 100% { 
+        box-shadow: var(--shadow-light), 0 0 15px rgba(152, 251, 152, 0.2); 
+    }
+    50% { 
+        box-shadow: var(--shadow-medium), 0 0 25px rgba(231, 84, 128, 0.3); 
+    }
+}
+
+[data-theme="light"] .menu-item:hover {
+    animation: gardenGlow 2s ease-in-out infinite;
+}
+
+/* 🌿 Scrollbars garden style */
+[data-theme="light"] ::-webkit-scrollbar {
+    width: 12px;
+}
+
+[data-theme="light"] ::-webkit-scrollbar-track {
+    background: rgba(240, 255, 240, 0.5);
+    border-radius: 6px;
+}
+
+[data-theme="light"] ::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, 
+        rgba(152, 251, 152, 0.6) 0%, 
+        rgba(231, 84, 128, 0.5) 100%);
+    border-radius: 6px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+}
+
+[data-theme="light"] ::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(135deg, 
+        rgba(231, 84, 128, 0.7) 0%, 
+        rgba(152, 251, 152, 0.6) 100%);
+}
+
+/* Animation for theme transitions */
+@keyframes themeTransition {
+    0% { opacity: 0.8; }
+    50% { opacity: 0.9; }
+    100% { opacity: 1; }
+}
+
+[data-theme] * {
+    animation: themeTransition 0.3s ease-out;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
+    .header-content {
+        flex-direction: column;
+        gap: 15px;
+    }
+    
+    .theme-toggle {
+        font-size: 0.8em;
+        padding: 8px 12px;
+        min-width: 100px;
+    }
     .photo-viewer-content {
         grid-template-columns: 1fr;
         grid-template-rows: 1fr auto;

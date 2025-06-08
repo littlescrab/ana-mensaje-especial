@@ -6,25 +6,61 @@ let isTimerRunning = false;
 let isBreakTime = false;
 let pomodoroCycle = 0;
 
-// === PASSWORD PROTECTION SYSTEM === //
-let isAuthenticated = false;
-
-// Password configuration
-const PASSWORD_CONFIG = {
-    // Múltiples contraseñas válidas para mayor flexibilidad
-    validPasswords: [
-        'gerberas',
-        'Ana',
-        'JuanAna',
-        'amor',
-        'miamor',
-        'nuestroamor'
-    ],
-    
-    // Configuración de sesión
-    sessionDuration: 24 * 60 * 60 * 1000, // 24 horas en millisegundos
-    sessionKey: 'ana_auth_session'
+// === THEME SYSTEM === //
+let currentTheme = 'dark'; // 'dark' or 'light'
+const THEME_CONFIG = {
+    storageKey: 'ana_app_theme',
+    themes: {
+        dark: {
+            name: 'Noche Romántica',
+            icon: '🌙'
+        },
+        light: {
+            name: 'Jardín de Flores', 
+            icon: '🌸'
+        }
+    }
 };
+
+// Initialize theme on startup
+function initializeTheme() {
+    const savedTheme = localStorage.getItem(THEME_CONFIG.storageKey) || 'dark';
+    setTheme(savedTheme);
+}
+
+// Set theme function
+function setTheme(theme) {
+    currentTheme = theme;
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem(THEME_CONFIG.storageKey, theme);
+    updateThemeButton();
+    console.log(`🎨 Tema cambiado a: ${theme}`);
+}
+
+// Toggle theme function
+function toggleTheme() {
+    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+    setTheme(newTheme);
+    
+    const themeMessages = {
+        dark: '🌙 Cambiado a Noche Romántica - Perfecto para momentos íntimos 💕',
+        light: '🌸 Cambiado a Jardín de Flores - Como un paseo entre gerberas 🌻'
+    };
+    
+    showNotification(themeMessages[newTheme], 'info');
+}
+
+// Update theme button
+function updateThemeButton() {
+    const themeBtn = document.getElementById('themeToggle');
+    if (themeBtn) {
+        const themeInfo = THEME_CONFIG.themes[currentTheme];
+        const oppositeTheme = currentTheme === 'dark' ? 'light' : 'dark';
+        const oppositeInfo = THEME_CONFIG.themes[oppositeTheme];
+        themeBtn.innerHTML = `${oppositeInfo.icon} ${oppositeInfo.name}`;
+        themeBtn.title = `Cambiar a tema ${oppositeInfo.name.toLowerCase()}`;
+    }
+}
 
 // Firebase imports and setup
 let db, storage;
@@ -886,24 +922,20 @@ class WeeklyPlanner {
 
 // Initialize the app
 document.addEventListener('DOMContentLoaded', function() {
-    // Verificar sesión existente al cargar la página
-    const hasValidSession = checkExistingSession();
+    // Initialize theme first
+    initializeTheme();
     
-    if (hasValidSession) {
-        // Sesión válida, inicializar app completa
-        initializeApp();
-        initializeFirebaseAndData();
-    } else {
-        // No hay sesión válida, mostrar pantalla de contraseña
-        document.getElementById('passwordScreen').style.display = 'flex';
-        document.getElementById('mainApp').classList.add('hidden');
-        
-        // Crear gerberas flotantes en la pantalla de login
-        createLoginGerberas();
+    // Initialize app immediately (no password protection)
+    initializeApp();
+    initializeFirebaseAndData();
+    
+    // Setup theme toggle event listener
+    const themeToggle = document.getElementById('themeToggle');
+    if (themeToggle) {
+        themeToggle.addEventListener('click', toggleTheme);
     }
     
-    // Event listener para el campo de contraseña (Enter key)
-    setupPasswordEventListeners();
+    console.log('🎉 Aplicación inicializada sin protección por contraseña');
 });
 
 function initializeFirebaseAndData() {
@@ -931,7 +963,8 @@ function initializeFirebaseAndData() {
 }
 
 function initializeApp() {
-    // Ya no verificar isAuthenticated aquí, se maneja en el flujo principal
+    // Show main app immediately
+    document.getElementById('mainApp').classList.remove('hidden');
     
     // Menu navigation
     const menuItems = document.querySelectorAll('.menu-item');
@@ -1652,8 +1685,15 @@ window.openPhotoViewer = function(index) {
     const date = photo.date ? new Date(photo.date).toLocaleDateString('es-ES') : 'Fecha desconocida';
     document.getElementById('photoViewerDate').textContent = date;
     
-    // Load comments
-    loadPhotoComments(photo.id || `existing_${index}`);
+    // Generate consistent photo ID
+    const photoId = generatePhotoId(photo, index);
+    console.log('🆔 Generated photo ID for comments:', photoId);
+    
+    // Store current photo ID globally for comments
+    window.currentPhotoId = photoId;
+    
+    // Load comments for this specific photo
+    loadPhotoComments(photoId);
     
     
     // Show modal
@@ -1778,34 +1818,46 @@ function setupImageDragging() {
 
 // === PHOTO COMMENTS FUNCTIONALITY === //
 function loadPhotoComments(photoId) {
-    // Try to load from Firebase first
-    if (window.db && collection && onSnapshot) {
+    console.log('🔍 Cargando comentarios para foto:', photoId);
+    
+    if (!photoId) {
+        console.error('❌ PhotoId no válido:', photoId);
+        displayComments([]);
+        return;
+    }
+    
+    // Try to load from Firebase first, fallback to localStorage
+    if (window.db) {
         loadCommentsFromFirebase(photoId);
     } else {
-        // Fallback to localStorage
-        const comments = JSON.parse(localStorage.getItem(`photo_comments_${photoId}`) || '[]');
-        displayComments(comments);
+        loadCommentsFromLocalStorage(photoId);
     }
 }
 
 function loadCommentsFromFirebase(photoId) {
     try {
-        const commentsRef = collection(window.db, 'photo_comments');
-        const { query, where, orderBy, onSnapshot: fbOnSnapshot } = window;
+        console.log('📸 Intentando cargar comentarios para foto:', photoId);
         
-        // Import query functions
+        if (!window.db) {
+            console.log('⚠️ Firebase no disponible, usando localStorage');
+            loadCommentsFromLocalStorage(photoId);
+            return;
+        }
+        
+        // Import Firebase functions dynamically
         import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js').then(module => {
-            const { query: fbQuery, where: fbWhere, orderBy: fbOrderBy, onSnapshot: fbOnSnapshot } = module;
+            const { collection, query, where, orderBy, onSnapshot, getDocs } = module;
             
             // Create query for this specific photo
-            const q = fbQuery(
+            const commentsRef = collection(window.db, 'photo_comments');
+            const q = query(
                 commentsRef,
-                fbWhere('photoId', '==', photoId),
-                fbOrderBy('timestamp', 'asc')
+                where('photoId', '==', photoId),
+                orderBy('timestamp', 'asc')
             );
             
             // Listen for real-time updates
-            fbOnSnapshot(q, (snapshot) => {
+            onSnapshot(q, (snapshot) => {
                 const firebaseComments = [];
                 snapshot.forEach((doc) => {
                     const data = doc.data();
@@ -1824,116 +1876,208 @@ function loadCommentsFromFirebase(photoId) {
                 
                 // Display comments
                 displayComments(firebaseComments);
+            }, (error) => {
+                console.error('Error en onSnapshot:', error);
+                loadCommentsFromLocalStorage(photoId);
             });
+        }).catch(error => {
+            console.error('Error importing Firebase modules:', error);
+            loadCommentsFromLocalStorage(photoId);
         });
     } catch (error) {
         console.error('Error loading comments from Firebase:', error);
-        // Fallback to localStorage
-        const comments = JSON.parse(localStorage.getItem(`photo_comments_${photoId}`) || '[]');
-        displayComments(comments);
+        loadCommentsFromLocalStorage(photoId);
     }
+}
+
+function loadCommentsFromLocalStorage(photoId) {
+    console.log('📂 Cargando comentarios desde localStorage para foto:', photoId);
+    const comments = JSON.parse(localStorage.getItem(`photo_comments_${photoId}`) || '[]');
+    console.log('📂 Found', comments.length, 'comentarios en localStorage');
+    displayComments(comments);
+}
+
+// Generate consistent photo ID based on photo properties
+function generatePhotoId(photo, index) {
+    // Strategy 1: Use photo name if available (most reliable)
+    if (photo.name && photo.name.trim()) {
+        return photo.name.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
+    }
+    
+    // Strategy 2: Use data hash for uploaded photos
+    if (photo.data && photo.data.length > 100) {
+        // Create a simple hash from the base64 data
+        const dataStr = photo.data.substring(50, 100); // Take middle section
+        let hash = 0;
+        for (let i = 0; i < dataStr.length; i++) {
+            const char = dataStr.charCodeAt(i);
+            hash = ((hash << 5) - hash) + char;
+            hash = hash & hash; // Convert to 32-bit integer
+        }
+        return `photo_hash_${Math.abs(hash)}`;
+    }
+    
+    // Strategy 3: Use timestamp if available
+    if (photo.date) {
+        const timestamp = new Date(photo.date).getTime();
+        return `photo_date_${timestamp}`;
+    }
+    
+    // Strategy 4: Use file size as additional identifier
+    if (photo.data) {
+        const size = photo.data.length;
+        return `photo_size_${size}_${index}`;
+    }
+    
+    // Fallback: Use index with current date for uniqueness
+    return `photo_index_${index}_${Date.now()}`;
 }
 
 function displayComments(comments) {
     const commentsList = document.getElementById('commentsList');
     
-    if (comments.length === 0) {
-        commentsList.innerHTML = '<div class="no-comments">💭 No hay comentarios aún. ¡Sé el primero en comentar!</div>';
+    if (!commentsList) {
+        console.error('❌ Comments list element not found!');
         return;
     }
     
-    commentsList.innerHTML = comments.map((comment, index) => `
-        <div class="comment-item ${comment.user} fade-cycle">
-            <div class="comment-header">
-                <span class="comment-user ${comment.user}">${comment.user === 'juan' ? '👨 Juan' : '👩 Ana'}</span>
-                <span class="comment-date">${new Date(comment.date).toLocaleDateString('es-ES')}</span>
-            </div>
-            <div class="comment-text">${comment.text}</div>
-        </div>
-    `).join('');
+    console.log('🎨 Displaying', comments.length, 'comments for photo:', window.currentPhotoId);
     
-    // Start fade cycle for existing comments
+    if (comments.length === 0) {
+        commentsList.innerHTML = `
+            <div class="no-comments">
+                <div style="font-size: 2em; margin-bottom: 10px;">🌻</div>
+                <p>¡Sé el primero en comentar esta hermosa foto!</p>
+                <p style="font-size: 0.9em; opacity: 0.8; margin-top: 5px;">Comparte lo que piensas sobre este momento especial 💕</p>
+            </div>
+        `;
+        return;
+    }
+    
+    commentsList.innerHTML = comments.map((comment, index) => {
+        const userClass = comment.user === 'juan' ? 'juan' : '';
+        const userIcon = comment.user === 'juan' ? '👨' : '👩';
+        const userName = comment.user === 'juan' ? 'Juan' : 'Ana';
+        const date = new Date(comment.date).toLocaleString('es-ES', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+        
+        // Add animation for new comments
+        const isNew = index === comments.length - 1;
+        const animationClass = isNew ? 'new-comment' : 'fade-cycle';
+        
+        return `
+            <div class="comment-item ${userClass} ${animationClass}" data-comment-id="${comment.id}">
+                <div class="comment-header">
+                    <span class="comment-user ${userClass}">${userIcon} ${userName}</span>
+                    <span class="comment-date">${date}</span>
+                </div>
+                <div class="comment-text">${escapeHtml(comment.text)}</div>
+            </div>
+        `;
+    }).join('');
+    
+    // Auto-scroll to show latest comment
     setTimeout(() => {
-        const commentItems = document.querySelectorAll('.comment-item');
-        commentItems.forEach((item, index) => {
+        commentsList.scrollTop = commentsList.scrollHeight;
+    }, 100);
+    
+    // Start fade animations for older comments
+    setTimeout(() => {
+        const oldComments = commentsList.querySelectorAll('.fade-cycle');
+        oldComments.forEach((item, index) => {
             setTimeout(() => {
-                startCommentFadeCycle(item);
-            }, index * 500); // Stagger the start of animations
+                if (typeof startCommentFadeCycle === 'function') {
+                    startCommentFadeCycle(item);
+                }
+            }, index * 500);
         });
     }, 1000);
-    
-    // Scroll to bottom
-    commentsList.scrollTop = commentsList.scrollHeight;
+}
+
+// Helper function to escape HTML
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
 }
 
 window.addComment = async function() {
+    // Check if we have a current photo
+    if (!window.currentPhotoId) {
+        showNotification('❌ No hay foto seleccionada para comentar', 'error');
+        return;
+    }
+    
     const user = document.getElementById('commentUser').value;
     const text = document.getElementById('commentText').value.trim();
     
     if (!text) {
-        showNotification('⚠️ Por favor escribe un comentario');
+        showNotification('📝 Por favor escribe un comentario', 'warning');
         return;
     }
     
-    const photo = window.currentPhotos[currentPhotoIndex];
-    const photoId = photo.id || `existing_${currentPhotoIndex}`;
-    
     const comment = {
-        id: Date.now() + Math.random(), // Make ID more unique
+        id: `comment_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         user,
         text,
-        date: new Date().toISOString()
+        date: new Date().toISOString(),
+        photoId: window.currentPhotoId
     };
     
-    // Try to save to Firebase first
-    const savedToFirebase = await saveCommentToFirebase(photoId, comment);
+    console.log('💬 Adding comment to photo:', window.currentPhotoId, comment);
     
-    if (!savedToFirebase) {
-        // If Firebase fails, save to localStorage as backup
-        const comments = JSON.parse(localStorage.getItem(`photo_comments_${photoId}`) || '[]');
-        comments.push(comment);
-        localStorage.setItem(`photo_comments_${photoId}`, JSON.stringify(comments));
-        
-        // Update display manually when using localStorage
-        displayComments(comments);
-        
-        // Add special animation for the new comment
-        setTimeout(() => {
-            const newCommentElement = document.querySelector('.comment-item:last-child');
-            if (newCommentElement) {
-                newCommentElement.classList.add('new-comment');
-                setTimeout(() => {
-                    startCommentFadeCycle(newCommentElement);
-                }, 2000);
-            }
-        }, 100);
+    // Save to localStorage immediately for instant feedback
+    const comments = JSON.parse(localStorage.getItem(`photo_comments_${window.currentPhotoId}`) || '[]');
+    comments.push(comment);
+    localStorage.setItem(`photo_comments_${window.currentPhotoId}`, JSON.stringify(comments));
+    
+    // Update display immediately
+    displayComments(comments);
+    
+    // Try to save to Firebase in background
+    try {
+        await saveCommentToFirebase(window.currentPhotoId, comment);
+        console.log('👍 Comment saved to Firebase');
+    } catch (error) {
+        console.warn('⚠️ Failed to save to Firebase, using localStorage only:', error);
+        showNotification('⚠️ Comentario guardado localmente', 'warning');
     }
-    // Note: If Firebase succeeds, the onSnapshot listener will automatically update the display
     
     // Clear form
     document.getElementById('commentText').value = '';
     
-    showNotification('💕 Comentario agregado');
+    // Show success message
+    showNotification('💕 Comentario agregado con amor', 'success');
 }
 
 async function saveCommentToFirebase(photoId, comment) {
     try {
-        if (window.db && collection && addDoc && serverTimestamp) {
-            const commentData = {
-                photoId,
-                id: comment.id,
-                user: comment.user,
-                text: comment.text,
-                date: comment.date,
-                timestamp: serverTimestamp()
-            };
-            
-            await addDoc(collection(window.db, 'photo_comments'), commentData);
-            console.log('💬 Comentario guardado en Firebase para foto:', photoId);
-            showNotification('☁️ Comentario sincronizado en la nube', 'success');
-            return true;
+        if (!window.db) {
+            console.log('⚠️ Firebase no disponible para guardar comentario');
+            return false;
         }
-        return false;
+        
+        // Import Firebase functions dynamically
+        const { collection, addDoc, serverTimestamp } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
+        
+        const commentData = {
+            photoId,
+            id: comment.id,
+            user: comment.user,
+            text: comment.text,
+            date: comment.date,
+            timestamp: serverTimestamp()
+        };
+        
+        await addDoc(collection(window.db, 'photo_comments'), commentData);
+        console.log('💬 Comentario guardado en Firebase para foto:', photoId);
+        showNotification('☁️ Comentario sincronizado en la nube', 'success');
+        return true;
     } catch (error) {
         console.error('Error saving comment to Firebase:', error);
         showNotification('⚠️ Error sincronizando comentario, guardado localmente', 'warning');
@@ -2010,6 +2154,84 @@ async function migrateCommentsForPhoto(photoId) {
     }
 }
 
+// === TEST FUNCTIONS FOR COMMENTS === //
+// Function to create test comments for development
+window.createTestComments = function() {
+    if (!window.currentPhotoId) {
+        console.log('⚠️ No hay foto seleccionada. Abre una foto primero.');
+        showNotification('⚠️ Abre una foto primero para probar comentarios', 'warning');
+        return;
+    }
+    
+    const testComments = [
+        {
+            id: `test_comment_1_${Date.now()}`,
+            user: 'juan',
+            text: '¡Qué hermosa foto! Me encanta este momento 💕',
+            date: new Date(Date.now() - 60000).toISOString(),
+            photoId: window.currentPhotoId
+        },
+        {
+            id: `test_comment_2_${Date.now()}`,
+            user: 'ana',
+            text: 'Este es uno de mis momentos favoritos 🌻✨',
+            date: new Date(Date.now() - 30000).toISOString(),
+            photoId: window.currentPhotoId
+        },
+        {
+            id: `test_comment_3_${Date.now()}`,
+            user: 'juan',
+            text: 'Siempre serás mi gerbera favorita 🌻💖',
+            date: new Date().toISOString(),
+            photoId: window.currentPhotoId
+        }
+    ];
+    
+    // Save test comments to localStorage
+    const existingComments = JSON.parse(localStorage.getItem(`photo_comments_${window.currentPhotoId}`) || '[]');
+    const allComments = [...existingComments, ...testComments];
+    localStorage.setItem(`photo_comments_${window.currentPhotoId}`, JSON.stringify(allComments));
+    
+    // Display updated comments
+    displayComments(allComments);
+    
+    console.log('✅ Comentarios de prueba creados para foto:', window.currentPhotoId);
+    showNotification('✅ Comentarios de prueba agregados', 'success');
+}
+
+// Function to clear all comments for current photo
+window.clearPhotoComments = function() {
+    if (!window.currentPhotoId) {
+        console.log('⚠️ No hay foto seleccionada.');
+        return;
+    }
+    
+    if (confirm('¿Estás seguro de que quieres eliminar todos los comentarios de esta foto?')) {
+        localStorage.removeItem(`photo_comments_${window.currentPhotoId}`);
+        displayComments([]);
+        console.log('🗑️ Comentarios eliminados para foto:', window.currentPhotoId);
+        showNotification('🗑️ Comentarios eliminados', 'info');
+    }
+}
+
+// Function to list all photos with comments
+window.listPhotosWithComments = function() {
+    const keys = Object.keys(localStorage).filter(key => key.startsWith('photo_comments_'));
+    
+    console.log('📋 Fotos con comentarios:');
+    keys.forEach(key => {
+        const photoId = key.replace('photo_comments_', '');
+        const comments = JSON.parse(localStorage.getItem(key) || '[]');
+        console.log(`  📸 ${photoId}: ${comments.length} comentarios`);
+    });
+    
+    if (keys.length === 0) {
+        console.log('  No hay fotos con comentarios aún.');
+    }
+    
+    return keys.length;
+}
+
 // === KEYBOARD SHORTCUTS === //
 document.addEventListener('keydown', function(e) {
     // ESC to go back to menu or close photo viewer
@@ -2049,242 +2271,11 @@ document.addEventListener('keydown', function(e) {
 });
 
 
-// Función para verificar la contraseña
-function checkPassword() {
-    const passwordInput = document.getElementById('passwordInput');
-    const errorDiv = document.getElementById('passwordError');
-    const loginButton = document.getElementById('loginButton');
-    const password = passwordInput.value.trim();
-    
-    if (!password) {
-        showPasswordError('Por favor ingresa una contraseña');
-        return;
-    }
-    
-    // Mostrar estado de carga
-    loginButton.classList.add('loading');
-    passwordInput.disabled = true;
-    
-    // Simular verificación (añadir pequeño delay para UX)
-    setTimeout(() => {
-        const isValidPassword = PASSWORD_CONFIG.validPasswords.some(validPassword => 
-            password.toLowerCase() === validPassword.toLowerCase()
-        );
-        
-        if (isValidPassword) {
-            // Contraseña correcta
-            authenticateUser();
-        } else {
-            // Contraseña incorrecta
-            showPasswordError('Contraseña incorrecta. Inténtalo de nuevo.');
-            passwordInput.value = '';
-            passwordInput.focus();
-        }
-        
-        // Restaurar estado del botón
-        loginButton.classList.remove('loading');
-        passwordInput.disabled = false;
-    }, 1000);
-}
+// REMOVED: All password-related functions have been eliminated
+// The app now starts directly without authentication
 
-// Función para mostrar errores de contraseña
-function showPasswordError(message) {
-    const errorDiv = document.getElementById('passwordError');
-    errorDiv.textContent = message;
-    errorDiv.classList.remove('hidden');
-    
-    // Ocultar error después de 3 segundos
-    setTimeout(() => {
-        errorDiv.classList.add('hidden');
-    }, 3000);
-}
-
-// Función para autenticar al usuario
-function authenticateUser() {
-    isAuthenticated = true;
-    
-    // Guardar sesión
-    const sessionData = {
-        authenticated: true,
-        timestamp: Date.now(),
-        expires: Date.now() + PASSWORD_CONFIG.sessionDuration
-    };
-    localStorage.setItem(PASSWORD_CONFIG.sessionKey, JSON.stringify(sessionData));
-    
-    // Mostrar notificación de bienvenida
-    showWelcomeAnimation();
-    
-    // Ocultar pantalla de contraseña y mostrar app principal
-    setTimeout(() => {
-        document.getElementById('passwordScreen').style.display = 'none';
-        document.getElementById('mainApp').classList.remove('hidden');
-        
-        // Limpiar gerberas de login si existe la función
-        if (window.clearLoginGerberasInterval) {
-            window.clearLoginGerberasInterval();
-        }
-        
-        // Inicializar aplicación completa después de autenticación
-        initializeApp();
-        initializeFirebaseAndData();
-        
-        // Inicializar gerberas flotantes en la app principal
-        createFloatingGerberas();
-        
-        showNotification('¡Bienvenida Ana! 🌻💕', 'success');
-    }, 2000);
-}
-
-// Función para mostrar animación de bienvenida
-function showWelcomeAnimation() {
-    const container = document.getElementById('loginGerberasContainer');
-    
-    // Crear explosión de gerberas
-    for (let i = 0; i < 15; i++) {
-        const gerbera = document.createElement('div');
-        gerbera.textContent = ['🌻', '🌺', '🌼', '🌷', '🌸', '💕', '💖'][Math.floor(Math.random() * 7)];
-        gerbera.style.position = 'fixed';
-        gerbera.style.left = '50%';
-        gerbera.style.top = '50%';
-        gerbera.style.fontSize = '2em';
-        gerbera.style.pointerEvents = 'none';
-        gerbera.style.zIndex = '10001';
-        
-        const angle = (i / 15) * 2 * Math.PI;
-        const distance = Math.random() * 300 + 100;
-        const finalX = Math.cos(angle) * distance;
-        const finalY = Math.sin(angle) * distance;
-        
-        container.appendChild(gerbera);
-        
-        // Animar explosión
-        setTimeout(() => {
-            gerbera.style.transition = 'all 1.5s ease-out';
-            gerbera.style.transform = `translate(${finalX}px, ${finalY}px) rotate(${Math.random() * 720}deg) scale(0)`;
-            gerbera.style.opacity = '0';
-        }, 100);
-        
-        // Limpiar después de la animación
-        setTimeout(() => {
-            if (gerbera.parentNode) {
-                gerbera.parentNode.removeChild(gerbera);
-            }
-        }, 2000);
-    }
-}
-
-// Función para verificar sesión existente
-function checkExistingSession() {
-    try {
-        const sessionData = localStorage.getItem(PASSWORD_CONFIG.sessionKey);
-        if (sessionData) {
-            const session = JSON.parse(sessionData);
-            const now = Date.now();
-            
-            // Verificar si la sesión es válida y no ha expirado
-            if (session.authenticated && session.expires > now) {
-                // Sesión válida, autenticar automáticamente
-                isAuthenticated = true;
-                document.getElementById('passwordScreen').style.display = 'none';
-                document.getElementById('mainApp').classList.remove('hidden');
-                
-                console.log('🔓 Sesión válida encontrada, acceso automático');
-                return true;
-            } else {
-                // Sesión expirada, limpiar
-                localStorage.removeItem(PASSWORD_CONFIG.sessionKey);
-            }
-        }
-    } catch (error) {
-        console.error('Error verificando sesión:', error);
-        localStorage.removeItem(PASSWORD_CONFIG.sessionKey);
-    }
-    
-    return false;
-}
-
-// Función para cerrar sesión
-window.logout = function() {
-    if (confirm('¿Estás segura de que quieres cerrar sesión?')) {
-        isAuthenticated = false;
-        localStorage.removeItem(PASSWORD_CONFIG.sessionKey);
-        
-        // Mostrar pantalla de contraseña
-        document.getElementById('mainApp').classList.add('hidden');
-        document.getElementById('passwordScreen').style.display = 'flex';
-        
-        // Limpiar campo de contraseña
-        document.getElementById('passwordInput').value = '';
-        document.getElementById('passwordError').classList.add('hidden');
-        
-        showNotification('Sesión cerrada', 'info');
-    }
-}
-
-// Función para configurar event listeners de contraseña
-function setupPasswordEventListeners() {
-    const passwordInput = document.getElementById('passwordInput');
-    const loginButton = document.getElementById('loginButton');
-    
-    if (passwordInput) {
-        passwordInput.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                checkPassword();
-            }
-        });
-        
-        // Focus automático en el campo de contraseña
-        setTimeout(() => {
-            passwordInput.focus();
-        }, 500);
-    }
-    
-    if (loginButton) {
-        loginButton.addEventListener('click', checkPassword);
-    }
-}
-
-// Función para crear gerberas flotantes en la pantalla de login
-function createLoginGerberas() {
-    const container = document.getElementById('loginGerberasContainer');
-    if (!container) return;
-    
-    const gerberas = ['🌻', '🌺', '🌼', '🌷', '🌸'];
-    
-    function addLoginGerbera() {
-        const gerbera = document.createElement('div');
-        gerbera.className = 'gerbera-float';
-        gerbera.textContent = gerberas[Math.floor(Math.random() * gerberas.length)];
-        gerbera.style.left = Math.random() * 100 + 'vw';
-        gerbera.style.animationDuration = (Math.random() * 8 + 12) + 's';
-        gerbera.style.opacity = Math.random() * 0.4 + 0.2;
-        gerbera.style.fontSize = (Math.random() * 2 + 1.5) + 'em';
-        
-        container.appendChild(gerbera);
-        
-        // Remover gerbera después de la animación
-        setTimeout(() => {
-            if (gerbera.parentNode) {
-                gerbera.parentNode.removeChild(gerbera);
-            }
-        }, 20000);
-    }
-    
-    // Agregar gerberas periódicamente
-    const loginGerberaInterval = setInterval(addLoginGerbera, 2000);
-    
-    // Limpiar intervalo cuando se autentica
-    const originalAuthenticate = authenticateUser;
-    const clearGerberasInterval = () => {
-        clearInterval(loginGerberaInterval);
-    };
-    
-    // Añadir función para limpiar el intervalo cuando sea necesario
-    window.clearLoginGerberasInterval = clearGerberasInterval;
-    
-    // Agregar algunas gerberas iniciales
-    for (let i = 0; i < 3; i++) {
-        setTimeout(addLoginGerbera, i * 800);
-    }
+// Show welcome message (replaced password system)
+function showWelcomeMessage() {
+    showNotification('¡Bienvenida Ana! 🌻💕 Sin contraseñas, solo amor.', 'success');
 }
 

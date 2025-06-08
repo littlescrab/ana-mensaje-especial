@@ -32,43 +32,19 @@
     </script>
 </head>
 <body>
-    <!-- Password Protection Screen -->
-    <div id="passwordScreen" class="password-screen">
-        <div class="password-container">
-            <div class="password-header">
-                <h1>🔐 Acceso Privado</h1>
-                <p class="password-subtitle">Ingresa la contraseña para continuar</p>
-            </div>
-            
-            <div class="password-form">
-                <div class="input-group">
-                    <label for="passwordInput">🗝️ Contraseña:</label>
-                    <input type="password" id="passwordInput" placeholder="Ingresa la contraseña" autofocus>
-                </div>
-                
-                <button id="loginButton" class="login-btn" onclick="checkPassword()">
-                    <span class="btn-text">🚪 Entrar</span>
-                    <span class="btn-loading">🔄 Verificando...</span>
-                </button>
-                
-                <div id="passwordError" class="password-error hidden">
-                    ❌ Contraseña incorrecta. Inténtalo de nuevo.
-                </div>
-                
-                <div class="password-hints">
-                    <p>💡 <em>Pista: Algo especial que compartimos 🌻</em></p>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Gerberas flotantes en pantalla de login -->
-        <div id="loginGerberasContainer"></div>
-    </div>
-    
-    <div id="mainApp" class="container hidden">
+    <div id="mainApp" class="container">
         <header class="header">
-            <h1>💕 Para Ana, Con Amor 💕</h1>
-            <p class="subtitle">Un lugar especial creado solo para nosotros <span class="code-accent">♥</span></p>
+            <div class="header-content">
+                <div>
+                    <h1>💕 Para Ana, Con Amor 💕</h1>
+                    <p class="subtitle">Un lugar especial creado solo para nosotros <span class="code-accent">♥</span></p>
+                </div>
+                <div class="header-controls">
+                    <button id="themeToggle" class="theme-toggle" title="Cambiar tema">
+                        ☀️ Claro
+                    </button>
+                </div>
+            </div>
         </header>
 
         <!-- Gerberas flotantes animadas -->
@@ -447,7 +423,10 @@
                             </select>
                             <textarea id="commentText" placeholder="Escribe un comentario..." rows="3"></textarea>
                         </div>
-                        <button onclick="window.addComment()" class="add-comment-btn">💕 Agregar Comentario</button>
+                        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                            <button onclick="window.addComment()" class="add-comment-btn" style="flex: 1;">💕 Agregar Comentario</button>
+                            <button onclick="window.createTestComments()" class="add-comment-btn" style="background: linear-gradient(135deg, #4a7c59 0%, #2d5a3d 100%); flex: 0 0 auto; min-width: 120px;">🧪 Prueba</button>
+                        </div>
                     </div>
                 </div>
             </div>
