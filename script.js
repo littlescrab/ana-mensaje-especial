@@ -60,24 +60,21 @@ async function saveMessageToFirebase(message) {
 async function uploadPhotoToFirebase(photoData) {
     try {
         if (!ref || !uploadBytes || !getDownloadURL || !storage) {
-            console.log('Firebase Storage not ready, saving locally only');
-            return photoData.data; // Return original data URL
+            throw new Error('Firebase Storage not ready');
         }
         
-        // Convert data URL to blob
-        const response = await fetch(photoData.data);
-        const blob = await response.blob();
+        // Handle file directly (not data URL)
+        const file = photoData.data;
         
         // Create reference with unique name
         const photoRef = ref(storage, `photos/${photoData.id}_${photoData.name}`);
         
-        // Upload the blob
-        await uploadBytes(photoRef, blob);
+        // Upload the file
+        await uploadBytes(photoRef, file);
         
         // Get download URL
         const downloadURL = await getDownloadURL(photoRef);
-        console.log('Photo uploaded to Firebase');
-        showNotification('✅ Foto subida a la nube ☁️', 'success');
+        console.log('🌻 Foto subida a Firebase Storage:', photoData.name);
         
         // Save photo metadata to Firestore
         const photosRef = collection(db, 'photos');
@@ -85,14 +82,15 @@ async function uploadPhotoToFirebase(photoData) {
             id: photoData.id,
             name: photoData.name,
             url: downloadURL,
+            type: 'firebase',
             timestamp: serverTimestamp()
         });
         
+        console.log('🌻 Metadatos guardados en Firestore');
         return downloadURL;
     } catch (error) {
         console.error('Error uploading photo to Firebase:', error);
-        showNotification('⚠️ Error subiendo foto, guardada localmente', 'warning');
-        return photoData.data; // Fall back to local data
+        throw error; // Let the calling function handle the error
     }
 }
 
@@ -960,15 +958,9 @@ function showSection(sectionName) {
         
         // Load photos when album section is shown
         if (sectionName === 'album') {
-            console.log('📸 Cargando álbum de fotos...');
-            // Only load if Firebase hasn't loaded photos yet
-            if (!window.currentPhotos || window.currentPhotos.length === 0) {
-                loadExistingPhotos();
-            } else {
-                // Re-setup event listeners if photos are already loaded
-                console.log('📸 Fotos ya cargadas, configurando event listeners...');
-                setupPhotoEventListeners();
-            }
+            console.log('🌻 Cargando álbum de fotos...');
+            // Always load to ensure proper initialization
+            loadExistingPhotos();
         }
     } else {
         document.querySelector('.menu').style.display = 'grid';
@@ -1063,53 +1055,27 @@ function displayMessages(messages) {
 function displayPhotos(firebasePhotos) {
     const photoGrid = document.getElementById('photoGrid');
     
-    // Get existing local photos
-    const existingPhotos = [
-        '6F0A4B53-C8E2-4094-8AC8-87A132F38940.JPG',
-        '80E7C940-EBD9-4310-9F35-AADBACF39D31.JPG',
-        'IMG_1655.jpg',
-        'IMG_1703.jpg',
-        'IMG_1718.jpg',
-        'IMG_1817.jpg',
-        'IMG_1839.jpg',
-        'IMG_1843.jpg',
-        'IMG_1899.jpg',
-        'IMG_2124.jpg',
-        'IMG_2125.jpg',
-        'IMG_2132.jpg',
-        'IMG_2360.jpg'
-    ];
-    
-    // Combine local existing photos + Firebase photos
-    const localPhotos = existingPhotos.map((name, index) => ({ 
-        id: `existing_${index}`,
-        name, 
-        data: `images/${name}`, 
-        type: 'existing',
-        date: new Date().toISOString(),
-        comments: JSON.parse(localStorage.getItem(`photo_comments_existing_${index}`) || '[]')
-    }));
-    
-    const allPhotos = [...localPhotos, ...firebasePhotos];
+    // Only use Firebase photos now (no more local photos)
+    const allPhotos = firebasePhotos;
     
     if (allPhotos.length === 0) {
-        photoGrid.innerHTML = '<p style="color: #e8c5ca; text-align: center; font-style: italic; grid-column: 1 / -1; padding: 40px;">No hay fotos en el álbum. ¡Agrega algunas! 📸</p>';
+        // The CSS will handle the empty state with gerberas message
+        photoGrid.innerHTML = '';
         return;
     }
     
     // Store photos globally for viewer
     window.currentPhotos = allPhotos;
-    console.log('📸 Fotos combinadas (locales + Firebase):', allPhotos.length);
+    console.log('🌻 Fotos cargadas desde Firebase:', allPhotos.length);
     
     // Generate HTML with proper event handling
     photoGrid.innerHTML = allPhotos.map((photo, index) => {
         const src = photo.data;
-        const isFirebase = photo.type === 'firebase';
         return `
             <div class="photo-item" data-photo-index="${index}" style="cursor: pointer;">
                 <img src="${src}" alt="${photo.name}" onerror="console.error('Error loading image:', '${src}'); this.parentElement.style.display='none';" loading="lazy" style="width: 100%; height: 200px; object-fit: cover; cursor: pointer;">
                 <div class="photo-overlay">
-                    ${isFirebase ? '<span class="sync-indicator" style="position: absolute; top: 5px; right: 5px; background: rgba(76, 175, 80, 0.8); color: white; padding: 2px 6px; border-radius: 10px; font-size: 0.7em;">☁️</span>' : ''}
+                    <span class="sync-indicator" style="position: absolute; top: 5px; right: 5px; background: rgba(76, 175, 80, 0.8); color: white; padding: 2px 6px; border-radius: 10px; font-size: 0.7em;">☁️</span>
                     <button class="delete-photo" onclick="event.stopPropagation(); deletePhoto(${index}, '${photo.type}')">
                         <i class="fas fa-trash"></i>
                     </button>
@@ -1118,66 +1084,34 @@ function displayPhotos(firebasePhotos) {
         `;
     }).join('');
     
-    // Setup event listeners for all photos (Firebase + local)
+    // Setup event listeners for all photos
     setupPhotoEventListeners();
 }
 
 // === ALBUM SECTION === //
 function loadExistingPhotos() {
-    // Load photos that are already in the directory
-    const existingPhotos = [
-        '6F0A4B53-C8E2-4094-8AC8-87A132F38940.JPG',
-        '80E7C940-EBD9-4310-9F35-AADBACF39D31.JPG',
-        'IMG_1655.jpg',
-        'IMG_1703.jpg',
-        'IMG_1718.jpg',
-        'IMG_1817.jpg',
-        'IMG_1839.jpg',
-        'IMG_1843.jpg',
-        'IMG_1899.jpg',
-        'IMG_2124.jpg',
-        'IMG_2125.jpg',
-        'IMG_2132.jpg',
-        'IMG_2360.jpg'
-    ];
-
+    // Album starts empty now - only show photos from Firebase or uploaded by user
     const photoGrid = document.getElementById('photoGrid');
     
-    // Load saved photos from localStorage
+    // Load saved photos from localStorage as fallback
     const savedPhotos = JSON.parse(localStorage.getItem('albumPhotos') || '[]');
     
-    // Combine existing and saved photos with proper structure
-    const allPhotos = [
-        ...existingPhotos.map((name, index) => ({ 
-            id: `existing_${index}`,
-            name, 
-            data: `images/${name}`, 
-            type: 'existing',
-            date: new Date().toISOString(),
-            comments: JSON.parse(localStorage.getItem(`photo_comments_existing_${index}`) || '[]')
-        })),
-        ...savedPhotos.map(photo => ({
-            ...photo,
-            comments: JSON.parse(localStorage.getItem(`photo_comments_${photo.id}`) || '[]')
-        }))
-    ];
-    
     // Store photos globally for photo viewer
-    window.currentPhotos = allPhotos;
+    window.currentPhotos = savedPhotos;
     
-    // Log for debugging
-    console.log('Loaded photos:', allPhotos.length, allPhotos);
+    console.log('🌻 Álbum inicializado vacío - listo para agregar fotos');
     
-    if (allPhotos.length === 0) {
-        photoGrid.innerHTML = '<p style="color: #e8c5ca; text-align: center; font-style: italic; grid-column: 1 / -1; padding: 40px;">No hay fotos en el álbum. ¡Agrega algunas! 📸</p>';
+    if (savedPhotos.length === 0) {
+        // The CSS will handle the empty state with gerberas message
+        photoGrid.innerHTML = '';
         return;
     }
     
-    photoGrid.innerHTML = allPhotos.map((photo, index) => {
+    photoGrid.innerHTML = savedPhotos.map((photo, index) => {
         const src = photo.data;
         return `
             <div class="photo-item" data-photo-index="${index}" style="cursor: pointer;">
-                <img src="${src}" alt="Foto ${index + 1}" onerror="console.error('Error loading image:', '${src}'); this.parentElement.style.display='none';" loading="lazy" style="width: 100%; height: 200px; object-fit: cover; cursor: pointer;">
+                <img src="${src}" alt="${photo.name}" onerror="console.error('Error loading image:', '${src}'); this.parentElement.style.display='none';" loading="lazy" style="width: 100%; height: 200px; object-fit: cover; cursor: pointer;">
                 <div class="photo-overlay">
                     <button class="delete-photo" onclick="event.stopPropagation(); deletePhoto(${index}, '${photo.type}')">
                         <i class="fas fa-trash"></i>
@@ -1235,36 +1169,44 @@ async function handlePhotoUpload(event) {
     
     if (files.length === 0) return;
     
-    showNotification('Subiendo fotos... ⏳');
+    showNotification('🌻 Subiendo fotos a la nube... ⏳', 'info');
+    
+    let uploadedCount = 0;
+    let totalFiles = files.length;
     
     for (const file of files) {
         if (file.type.startsWith('image/')) {
-            const reader = new FileReader();
-            reader.onload = async function(e) {
+            try {
                 const photoData = {
                     id: Date.now() + Math.random(),
-                    data: e.target.result,
+                    data: null, // Will be set to Firebase URL
                     name: file.name,
-                    type: 'uploaded',
+                    type: 'firebase',
                     date: new Date().toISOString()
                 };
                 
-                // Upload to Firebase first
-                await uploadPhotoToFirebase(photoData);
+                // Upload directly to Firebase Storage and Firestore
+                const downloadURL = await uploadPhotoToFirebase({
+                    ...photoData,
+                    data: file // Send the file directly instead of data URL
+                });
                 
-                // Also save to localStorage as backup
-                let savedPhotos = JSON.parse(localStorage.getItem('albumPhotos') || '[]');
-                savedPhotos.push(photoData);
-                localStorage.setItem('albumPhotos', JSON.stringify(savedPhotos));
-            };
-            reader.readAsDataURL(file);
+                uploadedCount++;
+                showNotification(`🌻 ${uploadedCount}/${totalFiles} fotos subidas`, 'success');
+                
+            } catch (error) {
+                console.error('Error uploading photo:', error);
+                showNotification(`❌ Error subiendo ${file.name}`, 'error');
+            }
         }
     }
     
     // Clear the input
     event.target.value = '';
     
-    showNotification('Fotos agregadas al álbum! 📸 Sincronizado en la nube');
+    if (uploadedCount > 0) {
+        showNotification(`🎉 ¡${uploadedCount} fotos agregadas al álbum! ☁️`, 'success');
+    }
 }
 
 function deletePhoto(index, type) {
@@ -2008,196 +1950,7 @@ function updateZoomIndicator() {
 }
 
 // === FIREBASE CLEANUP FUNCTIONS === //
-// Function to clear duplicate photos from Firebase
-window.clearFirebasePhotos = async function() {
-    // Show confirmation dialog
-    const userConfirmed = confirm(
-        '🧹 ¿Estás seguro de que quieres eliminar todas las fotos duplicadas de Firebase?\n\n' +
-        '✅ Esto mantendrá solo las fotos locales\n' +
-        '⚠️ Esta acción no se puede deshacer\n\n' +
-        'Haz clic en OK para continuar.'
-    );
-    
-    if (!userConfirmed) {
-        return;
-    }
-    
-    if (!window.db || !collection || !onSnapshot) {
-        showNotification('❌ Firebase no está disponible', 'error');
-        console.log('Firebase not available');
-        return;
-    }
-    
-    // Show loading notification
-    showNotification('🔄 Limpiando duplicados de Firebase...', 'info');
-    
-    try {
-        const { getDocs, deleteDoc, doc } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
-        const photosRef = collection(window.db, 'photos');
-        const snapshot = await getDocs(photosRef);
-        
-        let deletedCount = 0;
-        const deletePromises = [];
-        
-        snapshot.forEach((document) => {
-            deletePromises.push(deleteDoc(doc(window.db, 'photos', document.id)));
-            deletedCount++;
-        });
-        
-        await Promise.all(deletePromises);
-        console.log(`🗑️ Eliminadas ${deletedCount} fotos de Firebase`);
-        
-        if (deletedCount > 0) {
-            showNotification(`✅ ¡Listo! Eliminadas ${deletedCount} fotos duplicadas de Firebase`, 'success');
-            
-            // Reload the page to refresh the album
-            setTimeout(() => {
-                showNotification('🔄 Recargando álbum...', 'info');
-                setTimeout(() => {
-                    location.reload();
-                }, 1000);
-            }, 2000);
-        } else {
-            showNotification('ℹ️ No se encontraron fotos duplicadas en Firebase', 'info');
-        }
-        
-    } catch (error) {
-        console.error('Error cleaning Firebase photos:', error);
-        showNotification('❌ Error limpiando Firebase: ' + error.message, 'error');
-    }
-}
-
-// Function to upload existing local photos to Firebase
-window.uploadLocalPhotosToFirebase = async function() {
-    if (!window.db || !collection || !addDoc) {
-        showNotification('❌ Firebase no está disponible', 'error');
-        return;
-    }
-    
-    const userConfirmed = confirm(
-        '📸 ¿Subir todas las fotos locales a Firebase?\n\n' +
-        '✅ Esto hará que las fotos estén disponibles en todos los dispositivos\n' +
-        '✅ Los comentarios se sincronizarán correctamente\n' +
-        '⚠️ Puede tomar unos minutos\n\n' +
-        'Haz clic en OK para continuar.'
-    );
-    
-    if (!userConfirmed) {
-        return;
-    }
-    
-    showNotification('📤 Necesitas seleccionar las fotos manualmente...', 'info');
-    
-    // Create a file input to select the photos
-    const fileInput = document.createElement('input');
-    fileInput.type = 'file';
-    fileInput.multiple = true;
-    fileInput.accept = 'image/*';
-    
-    const existingPhotoNames = [
-        '6F0A4B53-C8E2-4094-8AC8-87A132F38940.JPG',
-        '80E7C940-EBD9-4310-9F35-AADBACF39D31.JPG',
-        'IMG_1655.jpg',
-        'IMG_1703.jpg',
-        'IMG_1718.jpg',
-        'IMG_1817.jpg',
-        'IMG_1839.jpg',
-        'IMG_1843.jpg',
-        'IMG_1899.jpg',
-        'IMG_2124.jpg',
-        'IMG_2125.jpg',
-        'IMG_2132.jpg',
-        'IMG_2360.jpg'
-    ];
-    
-    showNotification('📁 Selecciona las 13 fotos de la carpeta images/', 'info');
-    
-    fileInput.addEventListener('change', async (event) => {
-        const files = Array.from(event.target.files);
-        
-        if (files.length === 0) {
-            showNotification('❌ No se seleccionaron fotos', 'warning');
-            return;
-        }
-        
-        showNotification(`📤 Subiendo ${files.length} fotos a Firebase...`, 'info');
-        
-        let uploadedCount = 0;
-        let failedCount = 0;
-        
-        for (let i = 0; i < files.length; i++) {
-            const file = files[i];
-            
-            try {
-                // Upload to Firebase Storage
-                const { ref, uploadBytes, getDownloadURL } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js');
-                const photoRef = ref(window.storage, `photos/local_${file.name}`);
-                await uploadBytes(photoRef, file);
-                const downloadURL = await getDownloadURL(photoRef);
-                
-                // Determine the index based on filename if it matches existing photos
-                const existingIndex = existingPhotoNames.indexOf(file.name);
-                const photoId = existingIndex >= 0 ? `existing_${existingIndex}` : `uploaded_${Date.now()}_${i}`;
-                
-                // Save metadata to Firestore
-                const photoData = {
-                    id: photoId,
-                    name: file.name,
-                    url: downloadURL,
-                    type: existingIndex >= 0 ? 'existing_migrated' : 'uploaded_migrated',
-                    originalName: file.name,
-                    timestamp: serverTimestamp()
-                };
-                
-                await addDoc(collection(window.db, 'photos'), photoData);
-                
-                // Migrate existing comments for this photo if it's a known existing photo
-                if (existingIndex >= 0) {
-                    await migrateCommentsForPhoto(`existing_${existingIndex}`);
-                }
-                
-                uploadedCount++;
-                showNotification(`✅ Subida ${uploadedCount}/${files.length}: ${file.name}`, 'success');
-                
-            } catch (error) {
-                console.error(`Error uploading ${file.name}:`, error);
-                failedCount++;
-                showNotification(`❌ Error subiendo ${file.name}`, 'error');
-            }
-        }
-        
-        // Final notification
-        setTimeout(() => {
-            if (uploadedCount > 0) {
-                showNotification(`🎉 ¡Subidas ${uploadedCount} fotos exitosamente!`, 'success');
-                if (failedCount > 0) {
-                    showNotification(`⚠️ ${failedCount} fotos fallaron`, 'warning');
-                }
-                setTimeout(() => location.reload(), 2000);
-            } else {
-                showNotification('❌ No se pudo subir ninguna foto', 'error');
-            }
-        }, 1000);
-    });
-    
-    // Trigger file picker
-    fileInput.click();
-    
-    if (uploadedCount > 0) {
-        showNotification(`✅ ¡Listo! Subidas ${uploadedCount} fotos a Firebase`, 'success');
-        
-        if (failedCount > 0) {
-            showNotification(`⚠️ ${failedCount} fotos no se pudieron subir`, 'warning');
-        }
-        
-        // Reload to show Firebase photos
-        setTimeout(() => {
-            location.reload();
-        }, 2000);
-    } else {
-        showNotification('❌ No se pudo subir ninguna foto', 'error');
-    }
-}
+// Note: Firebase cleanup functions simplified for clean album approach
 
 // Function to migrate comments for a specific photo
 async function migrateCommentsForPhoto(photoId) {
