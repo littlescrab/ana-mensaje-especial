@@ -5,64 +5,66 @@
 
 /* === DARK THEME (Default) === */
 [data-theme="dark"] {
-    --bg-primary: linear-gradient(135deg, #0a0a0a 0%, #1a0a1a 25%, #2d0d2d 50%, #3d1a2d 75%, #4d1a1a 100%);
-    --bg-secondary: linear-gradient(135deg, rgba(26, 13, 46, 0.95) 0%, rgba(45, 27, 61, 0.9) 100%);
-    --bg-tertiary: linear-gradient(135deg, rgba(45, 27, 61, 0.8), rgba(74, 25, 66, 0.6));
-    --bg-card: linear-gradient(135deg, rgba(26, 13, 46, 0.9) 0%, rgba(45, 27, 61, 0.8) 100%);
-    --bg-menu-item: linear-gradient(135deg, rgba(26, 13, 46, 0.9) 0%, rgba(45, 27, 61, 0.8) 100%);
-    --bg-menu-item-hover: linear-gradient(135deg, rgba(45, 27, 61, 0.95) 0%, rgba(74, 25, 66, 0.9) 100%);
-    
-    --text-primary: #f0f0f0;
-    --text-secondary: #e8e6e3;
-    --text-tertiary: #e8c5ca;
-    --text-muted: #888;
-    
-    --accent-primary: #d63384;
-    --accent-secondary: #8b2635;
-    --accent-tertiary: #f8d7da;
-    
-    --border-primary: rgba(248, 215, 218, 0.1);
-    --border-secondary: rgba(248, 215, 218, 0.2);
-    --border-accent: rgba(214, 51, 132, 0.3);
-    
-    --shadow-light: 0 10px 25px rgba(0,0,0,0.4);
-    --shadow-medium: 0 20px 50px rgba(0,0,0,0.6);
-    --shadow-heavy: 0 25px 60px rgba(0,0,0,0.8);
-    
-    --glow-accent: 0 0 30px rgba(214, 51, 132, 0.5);
-    --glow-soft: 0 0 20px rgba(214, 51, 132, 0.3);
+    --bg-primary: linear-gradient(135deg, #0f1a2f 0%, #0c2f3f 25%, #0a3f5f 50%, #091f4f 75%, #081030 100%);
+    --bg-secondary: linear-gradient(135deg, rgba(10, 50, 80, 0.95) 0%, rgba(5, 20, 40, 0.9) 100%);
+    --bg-tertiary: linear-gradient(135deg, rgba(15, 30, 60, 0.8), rgba(0, 10, 30, 0.6));
+    --bg-card: linear-gradient(135deg, rgba(10, 20, 50, 0.9) 0%, rgba(20, 40, 70, 0.8) 100%);
+    --bg-menu-item: linear-gradient(135deg, rgba(15, 35, 55, 0.9) 0%, rgba(5, 20, 35, 0.8) 100%);
+    --bg-menu-item-hover: linear-gradient(135deg, rgba(0, 80, 120, 0.95) 0%, rgba(60, 0, 120, 0.9) 100%);
+
+    --text-primary: #e0f7fa;
+    --text-secondary: #b2ebf2;
+    --text-tertiary: #80deea;
+    --text-muted: #4dd0e1;
+
+    --accent-primary: #00e5ff;
+    --accent-secondary: #7c4dff;
+    --accent-tertiary: #b388ff;
+
+    --border-primary: rgba(0, 229, 255, 0.15);
+    --border-secondary: rgba(124, 77, 255, 0.25);
+    --border-accent: rgba(179, 136, 255, 0.35);
+
+    --shadow-light: 0 8px 20px rgba(0, 229, 255, 0.08);
+    --shadow-medium: 0 15px 35px rgba(124, 77, 255, 0.12);
+    --shadow-heavy: 0 20px 45px rgba(10, 20, 60, 0.15);
+
+    --glow-accent: 0 0 25px rgba(0, 229, 255, 0.25);
+    --glow-soft: 0 0 15px rgba(124, 77, 255, 0.3);
 }
+
 
 /* === LIGHT THEME - GARDEN FLORAL === */
 /* 🌸 Inspirado en jardines de flores, teoría de color naturaleza */
 [data-theme="light"] {
-    --bg-primary: linear-gradient(135deg, #f8fff4 0%, #e8f5e9 25%, #d0f0d8 50%, #c8e6c9 75%, #b2dfdb 100%);
-    --bg-secondary: linear-gradient(135deg, rgba(200, 240, 200, 0.9), rgba(180, 230, 210, 0.85));
-    --bg-tertiary: linear-gradient(135deg, rgba(210, 250, 220, 0.8), rgba(240, 250, 240, 0.6));
-    --bg-card: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(230, 250, 240, 0.85));
-    --bg-menu-item: linear-gradient(135deg, #f1f8e9, #dcedc8);
-    --bg-menu-item-hover: linear-gradient(135deg, #c5e1a5, #aed581);
+    --bg-primary: linear-gradient(135deg, #f0f8f0 0%, #e8f5e8 25%, #f5f0ff 50%, #fff0f5 75%, #f0fff0 100%);
+    --bg-secondary: linear-gradient(135deg, rgba(240, 255, 240, 0.95) 0%, rgba(245, 255, 250, 0.9) 100%);
+    --bg-tertiary: linear-gradient(135deg, rgba(255, 250, 250, 0.9), rgba(240, 248, 255, 0.8));
+    --bg-card: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 255, 248, 0.9) 100%);
+    --bg-menu-item: linear-gradient(135deg, rgba(250, 255, 250, 0.9) 0%, rgba(255, 250, 255, 0.85) 100%);
+    --bg-menu-item-hover: linear-gradient(135deg, rgba(240, 255, 240, 0.95) 0%, rgba(255, 240, 245, 0.9) 100%);
 
-    --text-primary: #2e4e1f; /* verde bosque */
-    --text-secondary: #4e342e; /* marrón floral */
-    --text-tertiary: #7b4b94; /* lavanda */
-    --text-muted: #888;
+    --text-primary: #2d5016;
+    --text-secondary: #4a7c20;
+    --text-tertiary: #6b8e23;
+    --text-muted: #8fbc8f;
 
-    --accent-primary: #81c784; /* verde menta pastel */
-    --accent-secondary: #f48fb1; /* rosa floral */
-    --accent-tertiary: #ce93d8; /* lavanda suave */
+    --accent-primary: #e75480;
+    --accent-secondary: #98fb98;
+    --accent-tertiary: #ff69b4;
 
-    --border-primary: rgba(129, 199, 132, 0.2);
-    --border-secondary: rgba(244, 143, 177, 0.2);
-    --border-accent: rgba(206, 147, 216, 0.3);
+    --border-primary: rgba(107, 142, 35, 0.15);
+    --border-secondary: rgba(72, 124, 32, 0.25);
+    --border-accent: rgba(231, 84, 128, 0.35);
 
-    --shadow-light: 0 4px 10px rgba(129, 199, 132, 0.3);
-    --shadow-medium: 0 10px 30px rgba(0, 0, 0, 0.15);
-    --shadow-heavy: 0 20px 50px rgba(0, 0, 0, 0.25);
+    --shadow-light: 0 8px 20px rgba(107, 142, 35, 0.08);
+    --shadow-medium: 0 15px 35px rgba(72, 124, 32, 0.12);
+    --shadow-heavy: 0 20px 45px rgba(45, 80, 22, 0.15);
 
-    --glow-accent: 0 0 15px rgba(244, 143, 177, 0.4);
-    --glow-soft: 0 0 10px rgba(129, 199, 132, 0.3);
+    --glow-accent: 0 0 25px rgba(231, 84, 128, 0.25);
+    --glow-soft: 0 0 15px rgba(152, 251, 152, 0.3);
 }
+
 
 
 * {
@@ -130,12 +132,45 @@ body {
 }
 
 /* Gerbera floating animation */
-.gerbera-float {
+#gerberasContainer {
     position: fixed;
-    font-size: 3em;
-    animation: floatGerbera 15s infinite linear;
-    z-index: -1;
-    opacity: 0.3;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    pointer-events: none;
+    z-index: 1;
+    overflow: hidden;
+}
+
+.gerbera-float {
+    position: absolute;
+    font-size: 3.5rem; /* Tamaño aumentado */
+    will-change: transform;
+    user-select: none;
+}
+
+
+
+@keyframes floatAndBounce {
+    0% {
+        transform: translateY(0) scale(1);
+        opacity: 0;
+    }
+    40% {
+        opacity: 1;
+        transform: translateY(60vh) scale(1.05);
+    }
+    60% {
+        transform: translateY(70vh) scale(0.98);
+    }
+    80% {
+        transform: translateY(75vh) scale(1.03);
+    }
+    100% {
+        transform: translateY(80vh) scale(1);
+        opacity: 0;
+    }
 }
 
 @keyframes floatGerbera {
@@ -463,8 +498,8 @@ body::before {
     transform: translateX(-50%);
     width: 100px;
     height: 2px;
-    background: linear-gradient(90deg, transparent, #d63384, transparent);
     border-radius: 2px;
+    transition: background 0.3s ease;
 }
 
 .header h1 {
@@ -2640,6 +2675,8 @@ body::before {
     padding: 20px;
 }
 
+
+
 /* === GARDEN THEME SPECIFIC ADJUSTMENTS === */
 /* 🌸 Elementos flotantes más naturales */
 [data-theme="light"] .gerbera-float {
@@ -2797,6 +2834,14 @@ body::before {
     background: linear-gradient(135deg, 
         rgba(231, 84, 128, 0.7) 0%, 
         rgba(152, 251, 152, 0.6) 100%);
+}
+
+[data-theme="light"] .header::after {
+    background: linear-gradient(90deg, transparent, #e75480, transparent); /* Rosa vibrante */
+}
+
+[data-theme="dark"] .header::after {
+    background: linear-gradient(90deg, transparent, #00e5ff, transparent); /* Cian eléctrico */
 }
 
 /* Animation for theme transitions */
