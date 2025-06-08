@@ -2067,6 +2067,155 @@ window.clearFirebasePhotos = async function() {
     }
 }
 
+// Function to upload existing local photos to Firebase
+window.uploadLocalPhotosToFirebase = async function() {
+    if (!window.db || !collection || !addDoc) {
+        showNotification('❌ Firebase no está disponible', 'error');
+        return;
+    }
+    
+    const userConfirmed = confirm(
+        '📸 ¿Subir todas las fotos locales a Firebase?\n\n' +
+        '✅ Esto hará que las fotos estén disponibles en todos los dispositivos\n' +
+        '✅ Los comentarios se sincronizarán correctamente\n' +
+        '⚠️ Puede tomar unos minutos\n\n' +
+        'Haz clic en OK para continuar.'
+    );
+    
+    if (!userConfirmed) {
+        return;
+    }
+    
+    showNotification('📤 Necesitas seleccionar las fotos manualmente...', 'info');
+    
+    // Create a file input to select the photos
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.multiple = true;
+    fileInput.accept = 'image/*';
+    
+    const existingPhotoNames = [
+        '6F0A4B53-C8E2-4094-8AC8-87A132F38940.JPG',
+        '80E7C940-EBD9-4310-9F35-AADBACF39D31.JPG',
+        'IMG_1655.jpg',
+        'IMG_1703.jpg',
+        'IMG_1718.jpg',
+        'IMG_1817.jpg',
+        'IMG_1839.jpg',
+        'IMG_1843.jpg',
+        'IMG_1899.jpg',
+        'IMG_2124.jpg',
+        'IMG_2125.jpg',
+        'IMG_2132.jpg',
+        'IMG_2360.jpg'
+    ];
+    
+    showNotification('📁 Selecciona las 13 fotos de la carpeta images/', 'info');
+    
+    fileInput.addEventListener('change', async (event) => {
+        const files = Array.from(event.target.files);
+        
+        if (files.length === 0) {
+            showNotification('❌ No se seleccionaron fotos', 'warning');
+            return;
+        }
+        
+        showNotification(`📤 Subiendo ${files.length} fotos a Firebase...`, 'info');
+        
+        let uploadedCount = 0;
+        let failedCount = 0;
+        
+        for (let i = 0; i < files.length; i++) {
+            const file = files[i];
+            
+            try {
+                // Upload to Firebase Storage
+                const { ref, uploadBytes, getDownloadURL } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js');
+                const photoRef = ref(window.storage, `photos/local_${file.name}`);
+                await uploadBytes(photoRef, file);
+                const downloadURL = await getDownloadURL(photoRef);
+                
+                // Determine the index based on filename if it matches existing photos
+                const existingIndex = existingPhotoNames.indexOf(file.name);
+                const photoId = existingIndex >= 0 ? `existing_${existingIndex}` : `uploaded_${Date.now()}_${i}`;
+                
+                // Save metadata to Firestore
+                const photoData = {
+                    id: photoId,
+                    name: file.name,
+                    url: downloadURL,
+                    type: existingIndex >= 0 ? 'existing_migrated' : 'uploaded_migrated',
+                    originalName: file.name,
+                    timestamp: serverTimestamp()
+                };
+                
+                await addDoc(collection(window.db, 'photos'), photoData);
+                
+                // Migrate existing comments for this photo if it's a known existing photo
+                if (existingIndex >= 0) {
+                    await migrateCommentsForPhoto(`existing_${existingIndex}`);
+                }
+                
+                uploadedCount++;
+                showNotification(`✅ Subida ${uploadedCount}/${files.length}: ${file.name}`, 'success');
+                
+            } catch (error) {
+                console.error(`Error uploading ${file.name}:`, error);
+                failedCount++;
+                showNotification(`❌ Error subiendo ${file.name}`, 'error');
+            }
+        }
+        
+        // Final notification
+        setTimeout(() => {
+            if (uploadedCount > 0) {
+                showNotification(`🎉 ¡Subidas ${uploadedCount} fotos exitosamente!`, 'success');
+                if (failedCount > 0) {
+                    showNotification(`⚠️ ${failedCount} fotos fallaron`, 'warning');
+                }
+                setTimeout(() => location.reload(), 2000);
+            } else {
+                showNotification('❌ No se pudo subir ninguna foto', 'error');
+            }
+        }, 1000);
+    });
+    
+    // Trigger file picker
+    fileInput.click();
+    
+    if (uploadedCount > 0) {
+        showNotification(`✅ ¡Listo! Subidas ${uploadedCount} fotos a Firebase`, 'success');
+        
+        if (failedCount > 0) {
+            showNotification(`⚠️ ${failedCount} fotos no se pudieron subir`, 'warning');
+        }
+        
+        // Reload to show Firebase photos
+        setTimeout(() => {
+            location.reload();
+        }, 2000);
+    } else {
+        showNotification('❌ No se pudo subir ninguna foto', 'error');
+    }
+}
+
+// Function to migrate comments for a specific photo
+async function migrateCommentsForPhoto(photoId) {
+    try {
+        const comments = JSON.parse(localStorage.getItem(`photo_comments_${photoId}`) || '[]');
+        
+        if (comments.length > 0) {
+            console.log(`📝 Migrando ${comments.length} comentarios para foto ${photoId}`);
+            
+            for (const comment of comments) {
+                await saveCommentToFirebase(photoId, comment);
+            }
+        }
+    } catch (error) {
+        console.error(`Error migrating comments for ${photoId}:`, error);
+    }
+}
+
 // === KEYBOARD SHORTCUTS === //
 document.addEventListener('keydown', function(e) {
     // ESC to go back to menu or close photo viewer
