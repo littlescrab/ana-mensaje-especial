@@ -372,19 +372,19 @@
 
     <!-- Photo Viewer Modal -->
     <div id="photoViewerModal" class="photo-viewer-modal">
-        <div class="photo-viewer-overlay" onclick="closePhotoViewer()"></div>
+        <div class="photo-viewer-overlay" onclick="window.closePhotoViewer()"></div>
         <div class="photo-viewer-content">
-            <button class="photo-viewer-close" onclick="closePhotoViewer()">×</button>
+            <button class="photo-viewer-close" onclick="window.closePhotoViewer()">×</button>
             <div class="photo-viewer-nav">
-                <button class="photo-nav-btn" id="prevPhotoBtn" onclick="navigatePhoto(-1)">‹</button>
-                <button class="photo-nav-btn" id="nextPhotoBtn" onclick="navigatePhoto(1)">›</button>
+                <button class="photo-nav-btn" id="prevPhotoBtn" onclick="window.navigatePhoto(-1)">‹</button>
+                <button class="photo-nav-btn" id="nextPhotoBtn" onclick="window.navigatePhoto(1)">›</button>
             </div>
             <div class="photo-viewer-image-container">
                 <img id="photoViewerImage" src="" alt="" />
                 <div class="photo-zoom-controls">
-                    <button onclick="zoomPhoto(-0.2)">🔍-</button>
-                    <button onclick="resetZoom()">↻</button>
-                    <button onclick="zoomPhoto(0.2)">🔍+</button>
+                    <button onclick="window.zoomPhoto(-0.2)">🔍-</button>
+                    <button onclick="window.resetZoom()">↻</button>
+                    <button onclick="window.zoomPhoto(0.2)">🔍+</button>
                 </div>
             </div>
             <div class="photo-details">
@@ -403,7 +403,7 @@
                             </select>
                             <textarea id="commentText" placeholder="Escribe un comentario..." rows="3"></textarea>
                         </div>
-                        <button onclick="addComment()" class="add-comment-btn">💕 Agregar Comentario</button>
+                        <button onclick="window.addComment()" class="add-comment-btn">💕 Agregar Comentario</button>
                     </div>
                 </div>
             </div>
