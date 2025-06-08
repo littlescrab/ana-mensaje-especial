@@ -1,58 +1,40 @@
-# 💕 Mi Mensaje Especial - Firebase Edition
+# 📱 Personal Web Application
 
-Un espacio compartido y sincronizado en tiempo real creado con amor donde tú y Ana pueden:
+A private web application for content management and organization with real-time synchronization.
 
-✨ **Escribir mensajes especiales** - Se sincronizan automáticamente entre ambos dispositivos
-📸 **Compartir fotos** - Álbum compartido en tiempo real
-⏰ **Usar el Pomodoro timer** - Para concentrarse juntos
+## ✨ Features
 
+📝 **Content Management** - Real-time synchronized across devices
+📸 **Media Gallery** - Private photo album with comments
+📅 **Weekly Planner** - Activity scheduling and management  
+⏰ **Pomodoro Timer** - Focus and productivity tool
 
-## ✅ Lo que está configurado
+## 🔧 Technical Stack
 
-- ✅ Firebase integrado y funcionando
-- ✅ Mensajes se guardan en la nube
-- ✅ Fotos se suben automáticamente
-- ✅ Sincronización en tiempo real
-- ✅ Indicadores visuales de sincronización (☁️)
-- ✅ Funciona offline como respaldo
+- **Frontend**: HTML5, CSS3, JavaScript (ES6+)
+- **Backend**: Firebase (Firestore + Storage)
+- **Features**: Real-time sync, offline support, responsive design
+- **Security**: Private access with custom rules
 
-## 🔥 Cómo funciona la magia
+## 🚀 Setup
 
-### **Para Ana y para ti:**
-1. Ana abre el link desde su casa → Puede agregar fotos y mensajes
-2. Tú abres el link desde tu casa → **VES INMEDIATAMENTE** lo que Ana agregó
-3. Tú agregas algo → Ana lo ve al instante
-4. **Todo se sincroniza automáticamente** 🎉
+1. Configure Firebase project
+2. Update security rules (see `firebase-security-rules.js`)
+3. Deploy to preferred hosting service
+4. Test functionality with `firebase-setup.html`
 
-### **Características especiales:**
-- **Tiempo real**: Cuando uno agrega algo, el otro lo ve inmediatamente
-- **Sin cuentas**: No necesitan crear usuarios ni contraseñas
-- **Funciona en cualquier dispositivo**: Teléfono, tablet, computadora
-- **Respaldo automático**: Todo se guarda en la nube de Google
-- **Offline**: Si no hay internet, guarda localmente y sincroniza después
+## 📋 Security Configuration
 
-## 🛠️ Configuración técnica (ya está lista)
+- Firestore rules restrict access to authorized users only
+- Storage rules limit file types and sizes
+- Regular monitoring and rule updates recommended
+- See security documentation for detailed setup
 
-```javascript
-// Firebase ya está configurado con:
-- Firestore Database (para mensajes)
-- Firebase Storage (para fotos)
-- Realtime synchronization
-- Automatic cloud backup
-```
+## 🛠️ Tools
 
-## 📱 Cómo usar
-
-1. **Comparte el link**: `https://littlescrab.github.io/ana-mensaje-especial`
-2. **Ana accede desde su dispositivo**
-3. **Tú accedes desde tu dispositivo**
-4. **¡Ambos pueden usar todas las funciones y verán los cambios del otro al instante!**
-
-### **Indicadores de sincronización:**
-- **☁️ Sincronizado**: Aparece cuando el dato está guardado en la nube
-- **Notificaciones verdes**: Confirman que todo se guardó correctamente
+- `firebase-setup.html` - Database configuration and testing tool
+- `firebase-security-rules.js` - Security rules reference
 
 ---
 
-*Creado con ❤️ para compartir momentos especiales*
-
+*Private application - Confidential*

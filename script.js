@@ -6,6 +6,26 @@ let isTimerRunning = false;
 let isBreakTime = false;
 let pomodoroCycle = 0;
 
+// === PASSWORD PROTECTION SYSTEM === //
+let isAuthenticated = false;
+
+// Password configuration
+const PASSWORD_CONFIG = {
+    // Múltiples contraseñas válidas para mayor flexibilidad
+    validPasswords: [
+        'gerberas',
+        'Ana',
+        'JuanAna',
+        'amor',
+        'miamor',
+        'nuestroamor'
+    ],
+    
+    // Configuración de sesión
+    sessionDuration: 24 * 60 * 60 * 1000, // 24 horas en millisegundos
+    sessionKey: 'ana_auth_session'
+};
+
 // Firebase imports and setup
 let db, storage;
 let collection, addDoc, onSnapshot, deleteDoc, doc, updateDoc, serverTimestamp;
@@ -866,8 +886,27 @@ class WeeklyPlanner {
 
 // Initialize the app
 document.addEventListener('DOMContentLoaded', function() {
-    initializeApp();
+    // Verificar sesión existente al cargar la página
+    const hasValidSession = checkExistingSession();
     
+    if (hasValidSession) {
+        // Sesión válida, inicializar app completa
+        initializeApp();
+        initializeFirebaseAndData();
+    } else {
+        // No hay sesión válida, mostrar pantalla de contraseña
+        document.getElementById('passwordScreen').style.display = 'flex';
+        document.getElementById('mainApp').classList.add('hidden');
+        
+        // Crear gerberas flotantes en la pantalla de login
+        createLoginGerberas();
+    }
+    
+    // Event listener para el campo de contraseña (Enter key)
+    setupPasswordEventListeners();
+});
+
+function initializeFirebaseAndData() {
     // Try to initialize Firebase, then load data
     setTimeout(() => {
         if (initializeFirebase()) {
@@ -889,9 +928,11 @@ document.addEventListener('DOMContentLoaded', function() {
             window.weeklyPlanner = new WeeklyPlanner();
         }
     }, 500);
-});
+}
 
 function initializeApp() {
+    // Ya no verificar isAuthenticated aquí, se maneja en el flujo principal
+    
     // Menu navigation
     const menuItems = document.querySelectorAll('.menu-item');
     menuItems.forEach(item => {
@@ -2006,4 +2047,244 @@ document.addEventListener('keydown', function(e) {
         }
     }
 });
+
+
+// Función para verificar la contraseña
+function checkPassword() {
+    const passwordInput = document.getElementById('passwordInput');
+    const errorDiv = document.getElementById('passwordError');
+    const loginButton = document.getElementById('loginButton');
+    const password = passwordInput.value.trim();
+    
+    if (!password) {
+        showPasswordError('Por favor ingresa una contraseña');
+        return;
+    }
+    
+    // Mostrar estado de carga
+    loginButton.classList.add('loading');
+    passwordInput.disabled = true;
+    
+    // Simular verificación (añadir pequeño delay para UX)
+    setTimeout(() => {
+        const isValidPassword = PASSWORD_CONFIG.validPasswords.some(validPassword => 
+            password.toLowerCase() === validPassword.toLowerCase()
+        );
+        
+        if (isValidPassword) {
+            // Contraseña correcta
+            authenticateUser();
+        } else {
+            // Contraseña incorrecta
+            showPasswordError('Contraseña incorrecta. Inténtalo de nuevo.');
+            passwordInput.value = '';
+            passwordInput.focus();
+        }
+        
+        // Restaurar estado del botón
+        loginButton.classList.remove('loading');
+        passwordInput.disabled = false;
+    }, 1000);
+}
+
+// Función para mostrar errores de contraseña
+function showPasswordError(message) {
+    const errorDiv = document.getElementById('passwordError');
+    errorDiv.textContent = message;
+    errorDiv.classList.remove('hidden');
+    
+    // Ocultar error después de 3 segundos
+    setTimeout(() => {
+        errorDiv.classList.add('hidden');
+    }, 3000);
+}
+
+// Función para autenticar al usuario
+function authenticateUser() {
+    isAuthenticated = true;
+    
+    // Guardar sesión
+    const sessionData = {
+        authenticated: true,
+        timestamp: Date.now(),
+        expires: Date.now() + PASSWORD_CONFIG.sessionDuration
+    };
+    localStorage.setItem(PASSWORD_CONFIG.sessionKey, JSON.stringify(sessionData));
+    
+    // Mostrar notificación de bienvenida
+    showWelcomeAnimation();
+    
+    // Ocultar pantalla de contraseña y mostrar app principal
+    setTimeout(() => {
+        document.getElementById('passwordScreen').style.display = 'none';
+        document.getElementById('mainApp').classList.remove('hidden');
+        
+        // Limpiar gerberas de login si existe la función
+        if (window.clearLoginGerberasInterval) {
+            window.clearLoginGerberasInterval();
+        }
+        
+        // Inicializar aplicación completa después de autenticación
+        initializeApp();
+        initializeFirebaseAndData();
+        
+        // Inicializar gerberas flotantes en la app principal
+        createFloatingGerberas();
+        
+        showNotification('¡Bienvenida Ana! 🌻💕', 'success');
+    }, 2000);
+}
+
+// Función para mostrar animación de bienvenida
+function showWelcomeAnimation() {
+    const container = document.getElementById('loginGerberasContainer');
+    
+    // Crear explosión de gerberas
+    for (let i = 0; i < 15; i++) {
+        const gerbera = document.createElement('div');
+        gerbera.textContent = ['🌻', '🌺', '🌼', '🌷', '🌸', '💕', '💖'][Math.floor(Math.random() * 7)];
+        gerbera.style.position = 'fixed';
+        gerbera.style.left = '50%';
+        gerbera.style.top = '50%';
+        gerbera.style.fontSize = '2em';
+        gerbera.style.pointerEvents = 'none';
+        gerbera.style.zIndex = '10001';
+        
+        const angle = (i / 15) * 2 * Math.PI;
+        const distance = Math.random() * 300 + 100;
+        const finalX = Math.cos(angle) * distance;
+        const finalY = Math.sin(angle) * distance;
+        
+        container.appendChild(gerbera);
+        
+        // Animar explosión
+        setTimeout(() => {
+            gerbera.style.transition = 'all 1.5s ease-out';
+            gerbera.style.transform = `translate(${finalX}px, ${finalY}px) rotate(${Math.random() * 720}deg) scale(0)`;
+            gerbera.style.opacity = '0';
+        }, 100);
+        
+        // Limpiar después de la animación
+        setTimeout(() => {
+            if (gerbera.parentNode) {
+                gerbera.parentNode.removeChild(gerbera);
+            }
+        }, 2000);
+    }
+}
+
+// Función para verificar sesión existente
+function checkExistingSession() {
+    try {
+        const sessionData = localStorage.getItem(PASSWORD_CONFIG.sessionKey);
+        if (sessionData) {
+            const session = JSON.parse(sessionData);
+            const now = Date.now();
+            
+            // Verificar si la sesión es válida y no ha expirado
+            if (session.authenticated && session.expires > now) {
+                // Sesión válida, autenticar automáticamente
+                isAuthenticated = true;
+                document.getElementById('passwordScreen').style.display = 'none';
+                document.getElementById('mainApp').classList.remove('hidden');
+                
+                console.log('🔓 Sesión válida encontrada, acceso automático');
+                return true;
+            } else {
+                // Sesión expirada, limpiar
+                localStorage.removeItem(PASSWORD_CONFIG.sessionKey);
+            }
+        }
+    } catch (error) {
+        console.error('Error verificando sesión:', error);
+        localStorage.removeItem(PASSWORD_CONFIG.sessionKey);
+    }
+    
+    return false;
+}
+
+// Función para cerrar sesión
+window.logout = function() {
+    if (confirm('¿Estás segura de que quieres cerrar sesión?')) {
+        isAuthenticated = false;
+        localStorage.removeItem(PASSWORD_CONFIG.sessionKey);
+        
+        // Mostrar pantalla de contraseña
+        document.getElementById('mainApp').classList.add('hidden');
+        document.getElementById('passwordScreen').style.display = 'flex';
+        
+        // Limpiar campo de contraseña
+        document.getElementById('passwordInput').value = '';
+        document.getElementById('passwordError').classList.add('hidden');
+        
+        showNotification('Sesión cerrada', 'info');
+    }
+}
+
+// Función para configurar event listeners de contraseña
+function setupPasswordEventListeners() {
+    const passwordInput = document.getElementById('passwordInput');
+    const loginButton = document.getElementById('loginButton');
+    
+    if (passwordInput) {
+        passwordInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                checkPassword();
+            }
+        });
+        
+        // Focus automático en el campo de contraseña
+        setTimeout(() => {
+            passwordInput.focus();
+        }, 500);
+    }
+    
+    if (loginButton) {
+        loginButton.addEventListener('click', checkPassword);
+    }
+}
+
+// Función para crear gerberas flotantes en la pantalla de login
+function createLoginGerberas() {
+    const container = document.getElementById('loginGerberasContainer');
+    if (!container) return;
+    
+    const gerberas = ['🌻', '🌺', '🌼', '🌷', '🌸'];
+    
+    function addLoginGerbera() {
+        const gerbera = document.createElement('div');
+        gerbera.className = 'gerbera-float';
+        gerbera.textContent = gerberas[Math.floor(Math.random() * gerberas.length)];
+        gerbera.style.left = Math.random() * 100 + 'vw';
+        gerbera.style.animationDuration = (Math.random() * 8 + 12) + 's';
+        gerbera.style.opacity = Math.random() * 0.4 + 0.2;
+        gerbera.style.fontSize = (Math.random() * 2 + 1.5) + 'em';
+        
+        container.appendChild(gerbera);
+        
+        // Remover gerbera después de la animación
+        setTimeout(() => {
+            if (gerbera.parentNode) {
+                gerbera.parentNode.removeChild(gerbera);
+            }
+        }, 20000);
+    }
+    
+    // Agregar gerberas periódicamente
+    const loginGerberaInterval = setInterval(addLoginGerbera, 2000);
+    
+    // Limpiar intervalo cuando se autentica
+    const originalAuthenticate = authenticateUser;
+    const clearGerberasInterval = () => {
+        clearInterval(loginGerberaInterval);
+    };
+    
+    // Añadir función para limpiar el intervalo cuando sea necesario
+    window.clearLoginGerberasInterval = clearGerberasInterval;
+    
+    // Agregar algunas gerberas iniciales
+    for (let i = 0; i < 3; i++) {
+        setTimeout(addLoginGerbera, i * 800);
+    }
+}
 

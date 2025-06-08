@@ -32,7 +32,40 @@
     </script>
 </head>
 <body>
-    <div class="container">
+    <!-- Password Protection Screen -->
+    <div id="passwordScreen" class="password-screen">
+        <div class="password-container">
+            <div class="password-header">
+                <h1>🔐 Acceso Privado</h1>
+                <p class="password-subtitle">Ingresa la contraseña para continuar</p>
+            </div>
+            
+            <div class="password-form">
+                <div class="input-group">
+                    <label for="passwordInput">🗝️ Contraseña:</label>
+                    <input type="password" id="passwordInput" placeholder="Ingresa la contraseña" autofocus>
+                </div>
+                
+                <button id="loginButton" class="login-btn" onclick="checkPassword()">
+                    <span class="btn-text">🚪 Entrar</span>
+                    <span class="btn-loading">🔄 Verificando...</span>
+                </button>
+                
+                <div id="passwordError" class="password-error hidden">
+                    ❌ Contraseña incorrecta. Inténtalo de nuevo.
+                </div>
+                
+                <div class="password-hints">
+                    <p>💡 <em>Pista: Algo especial que compartimos 🌻</em></p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Gerberas flotantes en pantalla de login -->
+        <div id="loginGerberasContainer"></div>
+    </div>
+    
+    <div id="mainApp" class="container hidden">
         <header class="header">
             <h1>💕 Para Ana, Con Amor 💕</h1>
             <p class="subtitle">Un lugar especial creado solo para nosotros <span class="code-accent">♥</span></p>
