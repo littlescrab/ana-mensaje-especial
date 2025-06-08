@@ -158,6 +158,37 @@ function loadPhotosFromFirebase() {
     }
 }
 
+// Load existing comments from Firebase on startup
+function migrateLocalCommentsToFirebase() {
+    if (!window.db || !collection || !addDoc) {
+        console.log('Firebase not available for comment migration');
+        return;
+    }
+    
+    console.log('🔄 Migrando comentarios locales a Firebase...');
+    
+    // Get all localStorage keys for photo comments
+    const keys = Object.keys(localStorage).filter(key => key.startsWith('photo_comments_'));
+    
+    keys.forEach(async (key) => {
+        try {
+            const photoId = key.replace('photo_comments_', '');
+            const comments = JSON.parse(localStorage.getItem(key) || '[]');
+            
+            if (comments.length > 0) {
+                console.log(`📸 Migrando ${comments.length} comentarios para foto ${photoId}`);
+                
+                for (const comment of comments) {
+                    // Check if comment already exists in Firebase
+                    await saveCommentToFirebase(photoId, comment);
+                }
+            }
+        } catch (error) {
+            console.error('Error migrating comments:', error);
+        }
+    });
+}
+
 // Advanced Weekly Planner Class
 class WeeklyPlanner {
     constructor() {
@@ -1764,8 +1795,60 @@ function setupImageDragging() {
 
 // === PHOTO COMMENTS FUNCTIONALITY === //
 function loadPhotoComments(photoId) {
-    const comments = JSON.parse(localStorage.getItem(`photo_comments_${photoId}`) || '[]');
-    displayComments(comments);
+    // Try to load from Firebase first
+    if (window.db && collection && onSnapshot) {
+        loadCommentsFromFirebase(photoId);
+    } else {
+        // Fallback to localStorage
+        const comments = JSON.parse(localStorage.getItem(`photo_comments_${photoId}`) || '[]');
+        displayComments(comments);
+    }
+}
+
+function loadCommentsFromFirebase(photoId) {
+    try {
+        const commentsRef = collection(window.db, 'photo_comments');
+        const { query, where, orderBy, onSnapshot: fbOnSnapshot } = window;
+        
+        // Import query functions
+        import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js').then(module => {
+            const { query: fbQuery, where: fbWhere, orderBy: fbOrderBy, onSnapshot: fbOnSnapshot } = module;
+            
+            // Create query for this specific photo
+            const q = fbQuery(
+                commentsRef,
+                fbWhere('photoId', '==', photoId),
+                fbOrderBy('timestamp', 'asc')
+            );
+            
+            // Listen for real-time updates
+            fbOnSnapshot(q, (snapshot) => {
+                const firebaseComments = [];
+                snapshot.forEach((doc) => {
+                    const data = doc.data();
+                    firebaseComments.push({
+                        id: data.id || doc.id,
+                        user: data.user,
+                        text: data.text,
+                        date: data.timestamp ? data.timestamp.toDate().toISOString() : data.date
+                    });
+                });
+                
+                console.log(`📸 Comentarios cargados desde Firebase para foto ${photoId}:`, firebaseComments.length);
+                
+                // Also save to localStorage as backup
+                localStorage.setItem(`photo_comments_${photoId}`, JSON.stringify(firebaseComments));
+                
+                // Display comments
+                displayComments(firebaseComments);
+            });
+        });
+    } catch (error) {
+        console.error('Error loading comments from Firebase:', error);
+        // Fallback to localStorage
+        const comments = JSON.parse(localStorage.getItem(`photo_comments_${photoId}`) || '[]');
+        displayComments(comments);
+    }
 }
 
 function displayComments(comments) {
@@ -1800,7 +1883,7 @@ function displayComments(comments) {
     commentsList.scrollTop = commentsList.scrollHeight;
 }
 
-window.addComment = function() {
+window.addComment = async function() {
     const user = document.getElementById('commentUser').value;
     const text = document.getElementById('commentText').value.trim();
     
@@ -1813,56 +1896,65 @@ window.addComment = function() {
     const photoId = photo.id || `existing_${currentPhotoIndex}`;
     
     const comment = {
-        id: Date.now(),
+        id: Date.now() + Math.random(), // Make ID more unique
         user,
         text,
         date: new Date().toISOString()
     };
     
-    // Get existing comments
-    const comments = JSON.parse(localStorage.getItem(`photo_comments_${photoId}`) || '[]');
-    comments.push(comment);
+    // Try to save to Firebase first
+    const savedToFirebase = await saveCommentToFirebase(photoId, comment);
     
-    // Save comments
-    localStorage.setItem(`photo_comments_${photoId}`, JSON.stringify(comments));
-    
-    // Update display with animation for new comment
-    displayComments(comments);
-    
-    // Add special animation for the new comment
-    setTimeout(() => {
-        const newCommentElement = document.querySelector('.comment-item:last-child');
-        if (newCommentElement) {
-            newCommentElement.classList.add('new-comment');
-            
-            // Start fade cycle animation after initial animation
-            setTimeout(() => {
-                startCommentFadeCycle(newCommentElement);
-            }, 2000);
-        }
-    }, 100);
+    if (!savedToFirebase) {
+        // If Firebase fails, save to localStorage as backup
+        const comments = JSON.parse(localStorage.getItem(`photo_comments_${photoId}`) || '[]');
+        comments.push(comment);
+        localStorage.setItem(`photo_comments_${photoId}`, JSON.stringify(comments));
+        
+        // Update display manually when using localStorage
+        displayComments(comments);
+        
+        // Add special animation for the new comment
+        setTimeout(() => {
+            const newCommentElement = document.querySelector('.comment-item:last-child');
+            if (newCommentElement) {
+                newCommentElement.classList.add('new-comment');
+                setTimeout(() => {
+                    startCommentFadeCycle(newCommentElement);
+                }, 2000);
+            }
+        }, 100);
+    }
+    // Note: If Firebase succeeds, the onSnapshot listener will automatically update the display
     
     // Clear form
     document.getElementById('commentText').value = '';
     
     showNotification('💕 Comentario agregado');
-    
-    // Try to save to Firebase
-    saveCommentToFirebase(photoId, comment);
 }
 
 async function saveCommentToFirebase(photoId, comment) {
     try {
-        if (window.db && collection && addDoc) {
-            await addDoc(collection(window.db, 'photo_comments'), {
+        if (window.db && collection && addDoc && serverTimestamp) {
+            const commentData = {
                 photoId,
-                ...comment,
+                id: comment.id,
+                user: comment.user,
+                text: comment.text,
+                date: comment.date,
                 timestamp: serverTimestamp()
-            });
-            console.log('Comment saved to Firebase');
+            };
+            
+            await addDoc(collection(window.db, 'photo_comments'), commentData);
+            console.log('💬 Comentario guardado en Firebase para foto:', photoId);
+            showNotification('☁️ Comentario sincronizado en la nube', 'success');
+            return true;
         }
+        return false;
     } catch (error) {
         console.error('Error saving comment to Firebase:', error);
+        showNotification('⚠️ Error sincronizando comentario, guardado localmente', 'warning');
+        return false;
     }
 }
 
