@@ -130,6 +130,9 @@
                     <label for="photoInput" class="upload-btn">
                         ➕ Agregar Fotos
                     </label>
+                    <button id="cleanDuplicatesBtn" class="clean-duplicates-btn" onclick="window.clearFirebasePhotos()" title="Eliminar fotos duplicadas de Firebase">
+                        🧹 Limpiar Duplicados
+                    </button>
                 </div>
                 <div class="photo-grid" id="photoGrid">
                     <!-- Photos will be loaded here -->
@@ -380,11 +383,12 @@
                 <button class="photo-nav-btn" id="nextPhotoBtn" onclick="window.navigatePhoto(1)">›</button>
             </div>
             <div class="photo-viewer-image-container">
+                <div class="zoom-indicator" id="zoomIndicator">1.0x</div>
                 <img id="photoViewerImage" src="" alt="" />
                 <div class="photo-zoom-controls">
-                    <button onclick="window.zoomPhoto(-0.2)">🔍-</button>
-                    <button onclick="window.resetZoom()">↻</button>
-                    <button onclick="window.zoomPhoto(0.2)">🔍+</button>
+                    <button onclick="window.zoomPhoto(-0.2)" title="Zoom out">🔍-</button>
+                    <button onclick="window.resetZoom()" title="Reset zoom">↻</button>
+                    <button onclick="window.zoomPhoto(0.2)" title="Zoom in">🔍+</button>
                 </div>
             </div>
             <div class="photo-details">

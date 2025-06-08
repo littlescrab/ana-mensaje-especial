@@ -518,6 +518,11 @@ body::before {
 
 .upload-area {
     margin-bottom: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    flex-wrap: wrap;
 }
 
 .upload-btn {
@@ -539,6 +544,33 @@ body::before {
     transform: translateY(-5px) scale(1.05);
     box-shadow: 0 12px 35px rgba(139, 38, 53, 0.5);
     border-color: rgba(248, 215, 218, 0.5);
+}
+
+.clean-duplicates-btn {
+    display: inline-block;
+    background: linear-gradient(135deg, #8b2635 0%, #6b1e3f 100%);
+    color: #f8d7da;
+    padding: 15px 30px;
+    border-radius: 15px;
+    cursor: pointer;
+    font-size: 1.1em;
+    transition: all 0.4s ease;
+    box-shadow: 0 8px 25px rgba(139, 38, 53, 0.4);
+    border: 1px solid rgba(248, 215, 218, 0.3);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+    margin-left: 20px;
+    text-decoration: none;
+}
+
+.clean-duplicates-btn:hover {
+    background: linear-gradient(135deg, #6b1e3f 0%, #8b2635 100%);
+    transform: translateY(-3px) scale(1.05);
+    box-shadow: 0 12px 35px rgba(107, 30, 63, 0.5);
+    border-color: rgba(248, 215, 218, 0.5);
+}
+
+.clean-duplicates-btn:active {
+    transform: translateY(-1px) scale(1.02);
 }
 
 #photoInput {
@@ -1917,10 +1949,40 @@ body::before {
     cursor: grab;
     transition: transform 0.3s ease;
     user-select: none;
+    border-radius: 8px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
 }
 
 #photoViewerImage:active {
     cursor: grabbing;
+}
+
+/* Efectos de zoom mejorados */
+#photoViewerImage.zoomed {
+    cursor: grab;
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4);
+}
+
+#photoViewerImage.zoomed:active {
+    cursor: grabbing;
+}
+
+/* Loading indicator para imágenes */
+.photo-viewer-image-container::before {
+    content: '🔍 Cargando imagen...';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: #e8c5ca;
+    font-size: 1.2em;
+    z-index: 1;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.photo-viewer-image-container.loading::before {
+    opacity: 1;
 }
 
 .photo-zoom-controls {
@@ -1951,6 +2013,30 @@ body::before {
 .photo-zoom-controls button:hover {
     background: linear-gradient(135deg, #8b2635 0%, #d63384 100%);
     transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(214, 51, 132, 0.4);
+}
+
+.photo-zoom-controls button:active {
+    transform: scale(0.95);
+}
+
+/* Indicador de nivel de zoom */
+.zoom-indicator {
+    position: absolute;
+    top: 15px;
+    left: 15px;
+    background: rgba(26, 13, 46, 0.9);
+    color: #f8d7da;
+    padding: 5px 10px;
+    border-radius: 15px;
+    font-size: 0.8em;
+    border: 1px solid rgba(248, 215, 218, 0.3);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.zoom-indicator.visible {
+    opacity: 1;
 }
 
 .photo-details {
@@ -1989,6 +2075,39 @@ body::before {
     max-height: 300px;
     overflow-y: auto;
     margin-bottom: 20px;
+    position: relative;
+}
+
+/* Animaciones para comentarios */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes fadeInDown {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes pulseGlow {
+    0%, 100% {
+        box-shadow: 0 0 5px rgba(214, 51, 132, 0.3);
+    }
+    50% {
+        box-shadow: 0 0 20px rgba(214, 51, 132, 0.6);
+    }
 }
 
 .comment-item {
@@ -1997,6 +2116,49 @@ body::before {
     border-radius: 10px;
     margin-bottom: 10px;
     border-left: 3px solid #d63384;
+    animation: fadeInUp 0.5s ease-out;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.comment-item.new-comment {
+    animation: fadeInDown 0.6s ease-out, pulseGlow 2s ease-in-out;
+}
+
+.comment-item.fade-cycle {
+    animation: fadeInUp 0.8s ease-out, 
+               fadeInDown 0.8s ease-out 3s,
+               fadeInUp 0.8s ease-out 6s;
+}
+
+.comment-item:hover {
+    background: rgba(45, 27, 61, 0.8);
+    transform: translateX(5px);
+    box-shadow: 0 4px 15px rgba(214, 51, 132, 0.3);
+}
+
+/* Efectos especiales para comentarios */
+.comment-item.fade-cycle {
+    position: relative;
+    overflow: hidden;
+}
+
+.comment-item.fade-cycle::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(214, 51, 132, 0.2), transparent);
+    animation: shimmer 4s infinite;
+}
+
+@keyframes shimmer {
+    0% { left: -100%; }
+    50% { left: 100%; }
+    100% { left: 100%; }
 }
 
 .comment-item.juan {

@@ -852,8 +852,9 @@ document.addEventListener('DOMContentLoaded', function() {
             }, 1000);
         } else {
             // Fall back to local storage
-            loadExistingPhotos();
+            console.log('📱 Inicializando almacenamiento local...');
             loadSavedMessages();
+            // Note: loadExistingPhotos() will be called when album section is opened
             
             // Initialize planner with local storage
             window.weeklyPlanner = new WeeklyPlanner();
@@ -924,6 +925,19 @@ function showSection(sectionName) {
         if (sectionName === 'planner' && window.weeklyPlanner) {
             window.weeklyPlanner.updateCurrentView();
             window.weeklyPlanner.updateStatistics();
+        }
+        
+        // Load photos when album section is shown
+        if (sectionName === 'album') {
+            console.log('📸 Cargando álbum de fotos...');
+            // Only load if Firebase hasn't loaded photos yet
+            if (!window.currentPhotos || window.currentPhotos.length === 0) {
+                loadExistingPhotos();
+            } else {
+                // Re-setup event listeners if photos are already loaded
+                console.log('📸 Fotos ya cargadas, configurando event listeners...');
+                setupPhotoEventListeners();
+            }
         }
     } else {
         document.querySelector('.menu').style.display = 'grid';
@@ -1015,28 +1029,66 @@ function displayMessages(messages) {
     `).join('');
 }
 
-function displayPhotos(photos) {
+function displayPhotos(firebasePhotos) {
     const photoGrid = document.getElementById('photoGrid');
     
-    if (photos.length === 0) {
-        photoGrid.innerHTML = '<p style="color: #888; text-align: center; font-style: italic; grid-column: 1 / -1;">No hay fotos en el álbum. ¡Agrega algunas!</p>';
+    // Get existing local photos
+    const existingPhotos = [
+        '6F0A4B53-C8E2-4094-8AC8-87A132F38940.JPG',
+        '80E7C940-EBD9-4310-9F35-AADBACF39D31.JPG',
+        'IMG_1655.jpg',
+        'IMG_1703.jpg',
+        'IMG_1718.jpg',
+        'IMG_1817.jpg',
+        'IMG_1839.jpg',
+        'IMG_1843.jpg',
+        'IMG_1899.jpg',
+        'IMG_2124.jpg',
+        'IMG_2125.jpg',
+        'IMG_2132.jpg',
+        'IMG_2360.jpg'
+    ];
+    
+    // Combine local existing photos + Firebase photos
+    const localPhotos = existingPhotos.map((name, index) => ({ 
+        id: `existing_${index}`,
+        name, 
+        data: `images/${name}`, 
+        type: 'existing',
+        date: new Date().toISOString(),
+        comments: JSON.parse(localStorage.getItem(`photo_comments_existing_${index}`) || '[]')
+    }));
+    
+    const allPhotos = [...localPhotos, ...firebasePhotos];
+    
+    if (allPhotos.length === 0) {
+        photoGrid.innerHTML = '<p style="color: #e8c5ca; text-align: center; font-style: italic; grid-column: 1 / -1; padding: 40px;">No hay fotos en el álbum. ¡Agrega algunas! 📸</p>';
         return;
     }
     
     // Store photos globally for viewer
-    window.currentPhotos = photos;
+    window.currentPhotos = allPhotos;
+    console.log('📸 Fotos combinadas (locales + Firebase):', allPhotos.length);
     
-    photoGrid.innerHTML = photos.map((photo, index) => {
+    // Generate HTML with proper event handling
+    photoGrid.innerHTML = allPhotos.map((photo, index) => {
         const src = photo.data;
+        const isFirebase = photo.type === 'firebase';
         return `
-            <div class="photo-item">
-                <img src="${src}" alt="${photo.name}" onerror="this.style.display='none'" onclick="window.openPhotoViewer(${index})" style="cursor: pointer;">
+            <div class="photo-item" data-photo-index="${index}" style="cursor: pointer;">
+                <img src="${src}" alt="${photo.name}" onerror="console.error('Error loading image:', '${src}'); this.parentElement.style.display='none';" loading="lazy" style="width: 100%; height: 200px; object-fit: cover; cursor: pointer;">
                 <div class="photo-overlay">
-                    <span class="sync-indicator" style="position: absolute; top: 5px; right: 5px; background: rgba(76, 175, 80, 0.8); color: white; padding: 2px 6px; border-radius: 10px; font-size: 0.7em;">☁️</span>
+                    ${isFirebase ? '<span class="sync-indicator" style="position: absolute; top: 5px; right: 5px; background: rgba(76, 175, 80, 0.8); color: white; padding: 2px 6px; border-radius: 10px; font-size: 0.7em;">☁️</span>' : ''}
+                    <button class="delete-photo" onclick="event.stopPropagation(); deletePhoto(${index}, '${photo.type}')">
+                        <i class="fas fa-trash"></i>
+                    </button>
                 </div>
             </div>
         `;
     }).join('');
+    
+    // Setup event listeners for all photos (Firebase + local)
+    setupPhotoEventListeners();
 }
 
 // === ALBUM SECTION === //
@@ -1045,6 +1097,17 @@ function loadExistingPhotos() {
     const existingPhotos = [
         '6F0A4B53-C8E2-4094-8AC8-87A132F38940.JPG',
         '80E7C940-EBD9-4310-9F35-AADBACF39D31.JPG',
+        'IMG_1655.jpg',
+        'IMG_1703.jpg',
+        'IMG_1718.jpg',
+        'IMG_1817.jpg',
+        'IMG_1839.jpg',
+        'IMG_1843.jpg',
+        'IMG_1899.jpg',
+        'IMG_2124.jpg',
+        'IMG_2125.jpg',
+        'IMG_2132.jpg',
+        'IMG_2360.jpg'
     ];
 
     const photoGrid = document.getElementById('photoGrid');
@@ -1057,38 +1120,83 @@ function loadExistingPhotos() {
         ...existingPhotos.map((name, index) => ({ 
             id: `existing_${index}`,
             name, 
-            data: name, 
+            data: `images/${name}`, 
             type: 'existing',
             date: new Date().toISOString(),
             comments: JSON.parse(localStorage.getItem(`photo_comments_existing_${index}`) || '[]')
-        })), 
+        })),
         ...savedPhotos.map(photo => ({
             ...photo,
             comments: JSON.parse(localStorage.getItem(`photo_comments_${photo.id}`) || '[]')
         }))
     ];
     
-    // Store photos globally for viewer
+    // Store photos globally for photo viewer
     window.currentPhotos = allPhotos;
     
+    // Log for debugging
+    console.log('Loaded photos:', allPhotos.length, allPhotos);
+    
     if (allPhotos.length === 0) {
-        photoGrid.innerHTML = '<p style="color: #888; text-align: center; font-style: italic; grid-column: 1 / -1;">No hay fotos en el álbum. ¡Agrega algunas!</p>';
+        photoGrid.innerHTML = '<p style="color: #e8c5ca; text-align: center; font-style: italic; grid-column: 1 / -1; padding: 40px;">No hay fotos en el álbum. ¡Agrega algunas! 📸</p>';
         return;
     }
     
     photoGrid.innerHTML = allPhotos.map((photo, index) => {
-        const src = photo.type === 'existing' ? photo.name : photo.data;
+        const src = photo.data;
         return `
-            <div class="photo-item">
-                <img src="${src}" alt="Foto ${index + 1}" onerror="this.style.display='none'" onclick="window.openPhotoViewer(${index})" style="cursor: pointer;">
+            <div class="photo-item" data-photo-index="${index}" style="cursor: pointer;">
+                <img src="${src}" alt="Foto ${index + 1}" onerror="console.error('Error loading image:', '${src}'); this.parentElement.style.display='none';" loading="lazy" style="width: 100%; height: 200px; object-fit: cover; cursor: pointer;">
                 <div class="photo-overlay">
-                    <button class="delete-photo" onclick="deletePhoto(${index}, '${photo.type}')">
+                    <button class="delete-photo" onclick="event.stopPropagation(); deletePhoto(${index}, '${photo.type}')">
                         <i class="fas fa-trash"></i>
                     </button>
                 </div>
             </div>
         `;
     }).join('');
+    
+    // Setup event listeners
+    setupPhotoEventListeners();
+}
+
+// Unified function to setup photo event listeners
+function setupPhotoEventListeners() {
+    setTimeout(() => {
+        const photoGrid = document.getElementById('photoGrid');
+        const photoItems = photoGrid.querySelectorAll('.photo-item');
+        
+        console.log('🔗 Configurando event listeners para', photoItems.length, 'fotos');
+        
+        photoItems.forEach((item, index) => {
+            // Remove any existing listeners by cloning
+            const newItem = item.cloneNode(true);
+            item.parentNode.replaceChild(newItem, item);
+            
+            // Add click listener to the container
+            newItem.addEventListener('click', (e) => {
+                if (!e.target.closest('.delete-photo')) {
+                    console.log('🖱️ Clic en foto índice:', index);
+                    e.preventDefault();
+                    e.stopPropagation();
+                    window.openPhotoViewer(index);
+                }
+            });
+            
+            // Also add to the image directly
+            const img = newItem.querySelector('img');
+            if (img) {
+                img.addEventListener('click', (e) => {
+                    if (!e.target.closest('.delete-photo')) {
+                        console.log('🖼️ Clic directo en imagen:', index);
+                        e.preventDefault();
+                        e.stopPropagation();
+                        window.openPhotoViewer(index);
+                    }
+                });
+            }
+        });
+    }, 300); // Increased timeout to ensure DOM is ready
 }
 
 async function handlePhotoUpload(event) {
@@ -1273,21 +1381,31 @@ function testNotificationSound() {
 }
 
 // === UTILITY FUNCTIONS === //
-function showNotification(message) {
+function showNotification(message, type = 'success') {
     // Create notification element
     const notification = document.createElement('div');
+    
+    // Set background color based on type
+    const colors = {
+        success: '#4CAF50',
+        error: '#f44336',
+        warning: '#ff9800',
+        info: '#2196F3'
+    };
+    
     notification.style.cssText = `
         position: fixed;
         top: 20px;
         right: 20px;
-        background: #4CAF50;
+        background: ${colors[type] || colors.success};
         color: white;
         padding: 15px 25px;
         border-radius: 10px;
         z-index: 1000;
         box-shadow: 0 5px 15px rgba(0,0,0,0.3);
         animation: slideIn 0.3s ease;
-        max-width: 300px;
+        max-width: 350px;
+        font-weight: 500;
     `;
     
     notification.textContent = message;
@@ -1493,6 +1611,13 @@ let imagePos = { x: 0, y: 0 };
 
 window.openPhotoViewer = function(index) {
     console.log('Opening photo viewer for index:', index);
+    console.log('Available photos:', window.currentPhotos);
+    
+    if (!window.currentPhotos || window.currentPhotos.length === 0) {
+        console.error('No photos available!');
+        return;
+    }
+    
     currentPhotoIndex = index;
     const modal = document.getElementById('photoViewerModal');
     const photo = window.currentPhotos[index];
@@ -1506,7 +1631,7 @@ window.openPhotoViewer = function(index) {
     
     // Set image
     const img = document.getElementById('photoViewerImage');
-    img.src = photo.data || photo.name;
+    img.src = photo.data;
     
     // Set photo info
     document.getElementById('photoViewerTitle').textContent = photo.name || `Foto ${index + 1}`;
@@ -1555,11 +1680,32 @@ function updateNavigationButtons() {
 }
 
 window.zoomPhoto = function(delta) {
+    const prevZoom = currentZoom;
     currentZoom += delta;
-    currentZoom = Math.max(0.5, Math.min(3, currentZoom)); // Limit zoom between 0.5x and 3x
+    currentZoom = Math.max(0.5, Math.min(5, currentZoom)); // Increase max zoom to 5x
     
     const img = document.getElementById('photoViewerImage');
+    
+    // Smooth zoom transition with easing
+    img.style.transition = 'transform 0.2s ease-out';
     img.style.transform = `translate(${imagePos.x}px, ${imagePos.y}px) scale(${currentZoom})`;
+    
+    // Reset transition after animation
+    setTimeout(() => {
+        img.style.transition = 'none';
+    }, 200);
+    
+    // Update cursor based on zoom level
+    if (currentZoom > 1) {
+        img.style.cursor = 'grab';
+        img.classList.add('zoomed');
+    } else {
+        img.style.cursor = 'zoom-in';
+        img.classList.remove('zoomed');
+    }
+    
+    // Update zoom indicator
+    updateZoomIndicator();
 }
 
 window.resetZoom = function() {
@@ -1567,7 +1713,18 @@ window.resetZoom = function() {
     imagePos = { x: 0, y: 0 };
     
     const img = document.getElementById('photoViewerImage');
+    img.style.transition = 'transform 0.3s ease';
     img.style.transform = 'translate(0px, 0px) scale(1)';
+    img.style.cursor = 'zoom-in';
+    img.classList.remove('zoomed');
+    
+    // Reset transition after animation
+    setTimeout(() => {
+        img.style.transition = 'none';
+    }, 300);
+    
+    // Update zoom indicator
+    updateZoomIndicator();
 }
 
 function setupImageDragging() {
@@ -1595,6 +1752,14 @@ function setupImageDragging() {
         isDragging = false;
         img.style.cursor = 'grab';
     });
+    
+    // Add wheel zoom functionality
+    const imageContainer = document.querySelector('.photo-viewer-image-container');
+    imageContainer.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        const zoomDelta = e.deltaY > 0 ? -0.2 : 0.2;
+        window.zoomPhoto(zoomDelta);
+    });
 }
 
 // === PHOTO COMMENTS FUNCTIONALITY === //
@@ -1611,8 +1776,8 @@ function displayComments(comments) {
         return;
     }
     
-    commentsList.innerHTML = comments.map(comment => `
-        <div class="comment-item ${comment.user}">
+    commentsList.innerHTML = comments.map((comment, index) => `
+        <div class="comment-item ${comment.user} fade-cycle">
             <div class="comment-header">
                 <span class="comment-user ${comment.user}">${comment.user === 'juan' ? '👨 Juan' : '👩 Ana'}</span>
                 <span class="comment-date">${new Date(comment.date).toLocaleDateString('es-ES')}</span>
@@ -1620,6 +1785,16 @@ function displayComments(comments) {
             <div class="comment-text">${comment.text}</div>
         </div>
     `).join('');
+    
+    // Start fade cycle for existing comments
+    setTimeout(() => {
+        const commentItems = document.querySelectorAll('.comment-item');
+        commentItems.forEach((item, index) => {
+            setTimeout(() => {
+                startCommentFadeCycle(item);
+            }, index * 500); // Stagger the start of animations
+        });
+    }, 1000);
     
     // Scroll to bottom
     commentsList.scrollTop = commentsList.scrollHeight;
@@ -1651,8 +1826,21 @@ window.addComment = function() {
     // Save comments
     localStorage.setItem(`photo_comments_${photoId}`, JSON.stringify(comments));
     
-    // Update display
+    // Update display with animation for new comment
     displayComments(comments);
+    
+    // Add special animation for the new comment
+    setTimeout(() => {
+        const newCommentElement = document.querySelector('.comment-item:last-child');
+        if (newCommentElement) {
+            newCommentElement.classList.add('new-comment');
+            
+            // Start fade cycle animation after initial animation
+            setTimeout(() => {
+                startCommentFadeCycle(newCommentElement);
+            }, 2000);
+        }
+    }, 100);
     
     // Clear form
     document.getElementById('commentText').value = '';
@@ -1675,6 +1863,115 @@ async function saveCommentToFirebase(photoId, comment) {
         }
     } catch (error) {
         console.error('Error saving comment to Firebase:', error);
+    }
+}
+
+// Function to start fade cycle animation for comments
+function startCommentFadeCycle(element) {
+    let cycleCount = 0;
+    const maxCycles = 3; // Number of fade cycles
+    
+    function performFadeCycle() {
+        if (cycleCount >= maxCycles) {
+            // End with a subtle glow
+            element.style.boxShadow = '0 0 10px rgba(214, 51, 132, 0.3)';
+            setTimeout(() => {
+                element.style.boxShadow = '';
+            }, 2000);
+            return;
+        }
+        
+        // Fade out
+        element.style.transition = 'opacity 0.8s ease-in-out';
+        element.style.opacity = '0.3';
+        
+        setTimeout(() => {
+            // Fade in
+            element.style.opacity = '1';
+            cycleCount++;
+            
+            // Schedule next cycle
+            setTimeout(performFadeCycle, 2000);
+        }, 800);
+    }
+    
+    // Start the first cycle after a delay
+    setTimeout(performFadeCycle, 1000);
+}
+
+// Function to update zoom indicator
+function updateZoomIndicator() {
+    const indicator = document.getElementById('zoomIndicator');
+    if (indicator) {
+        indicator.textContent = `${currentZoom.toFixed(1)}x`;
+        
+        // Show indicator when zoom changes
+        indicator.classList.add('visible');
+        
+        // Hide after 2 seconds
+        setTimeout(() => {
+            indicator.classList.remove('visible');
+        }, 2000);
+    }
+}
+
+// === FIREBASE CLEANUP FUNCTIONS === //
+// Function to clear duplicate photos from Firebase
+window.clearFirebasePhotos = async function() {
+    // Show confirmation dialog
+    const userConfirmed = confirm(
+        '🧹 ¿Estás seguro de que quieres eliminar todas las fotos duplicadas de Firebase?\n\n' +
+        '✅ Esto mantendrá solo las fotos locales\n' +
+        '⚠️ Esta acción no se puede deshacer\n\n' +
+        'Haz clic en OK para continuar.'
+    );
+    
+    if (!userConfirmed) {
+        return;
+    }
+    
+    if (!window.db || !collection || !onSnapshot) {
+        showNotification('❌ Firebase no está disponible', 'error');
+        console.log('Firebase not available');
+        return;
+    }
+    
+    // Show loading notification
+    showNotification('🔄 Limpiando duplicados de Firebase...', 'info');
+    
+    try {
+        const { getDocs, deleteDoc, doc } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
+        const photosRef = collection(window.db, 'photos');
+        const snapshot = await getDocs(photosRef);
+        
+        let deletedCount = 0;
+        const deletePromises = [];
+        
+        snapshot.forEach((document) => {
+            deletePromises.push(deleteDoc(doc(window.db, 'photos', document.id)));
+            deletedCount++;
+        });
+        
+        await Promise.all(deletePromises);
+        console.log(`🗑️ Eliminadas ${deletedCount} fotos de Firebase`);
+        
+        if (deletedCount > 0) {
+            showNotification(`✅ ¡Listo! Eliminadas ${deletedCount} fotos duplicadas de Firebase`, 'success');
+            
+            // Reload the page to refresh the album
+            setTimeout(() => {
+                showNotification('🔄 Recargando álbum...', 'info');
+                setTimeout(() => {
+                    location.reload();
+                }, 1000);
+            }, 2000);
+        } else {
+            showNotification('ℹ️ No se encontraron fotos duplicadas en Firebase', 'info');
+        }
+        
+    } catch (error) {
+        console.error('Error cleaning Firebase photos:', error);
+        showNotification('❌ Error limpiando Firebase: ' + error.message, 'error');
     }
 }
 
