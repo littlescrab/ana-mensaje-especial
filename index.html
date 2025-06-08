@@ -367,8 +367,48 @@
     </audio>
     
     <audio id="deleteActivitySound" preload="auto">
-        <source src="data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+HtuGYdBzaH0fPTgjEGGGm98OShUgwOUarm7q1dEgxGo+LwnGEcCEOV2e7BcCIGGV/s0u2HMWsZEJrw5YYzGMjMf2zPwTJ8g6T2b99QZIrX5XhnT4I77u1w8VpbcE0KcOfAXrBtI8YZhH5HgYAL2rG01LmkEI3CdnF7lXBhPL1Z89ZRNY0tEy6Fz+iTQgUdYrLm6qBUEQk/suHQbjwIImW79OWcUwwJV1+u2KdZQYxM4JhN/MMAAI7pFd7qhwAADQFMy7iP9nAKAAY/L/FRZqhBnBTw8sZM3OLYb3ppVIrEo5vZtLx9RQ4vTPTQfm6yJQgfebTk6phWEAhGn+Hv3oYgBTGN1vHLdCcGHWa77eSiWJrAIECpC4RKyNzlGWq4Ec/tVVWm22dRMnGlPe5KYnVhOURGEAY="" type="audio/wav">
+        <source src="data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+HtuGYdBzaH0fPTgjEGGGm98OShUgwOUarm7q1dEgxGo+LwnGEcCEOV2e7BcCIGGV/s0u2HMWsZEJrw5YYzGMjMf2zPwTJ8g6T2b99QZIrX5XhnT4I77u1w8VpbcE0KcOfAXrBtI8YZhH5HgYAL2rG01LmkEI3CdnF7lXBhPL1Z89ZRNY0tEy6Fz+iTQgUdYrLm6qBUEQk/suHQbjwIImW79OWcUwwJV1+u2KdZQYxM4JhN/MMAAI7pFd7qhwAADQFMy7iP9nAKAAY/L/FRZqhBnBTw8sZM3OLYb3ppVIrEo5vZtLx9RQ4vTPTQfm6yJQgfebTk6phWEAhGn+Hv3oYgBTGN1vHLdCcGHWa77eSiWJrAIECpC4RKyNzlGWq4Ec/tVVWm22dRMnGlPe5KYnVhOURGEAY=" type="audio/wav">
     </audio>
+
+    <!-- Photo Viewer Modal -->
+    <div id="photoViewerModal" class="photo-viewer-modal">
+        <div class="photo-viewer-overlay" onclick="closePhotoViewer()"></div>
+        <div class="photo-viewer-content">
+            <button class="photo-viewer-close" onclick="closePhotoViewer()">×</button>
+            <div class="photo-viewer-nav">
+                <button class="photo-nav-btn" id="prevPhotoBtn" onclick="navigatePhoto(-1)">‹</button>
+                <button class="photo-nav-btn" id="nextPhotoBtn" onclick="navigatePhoto(1)">›</button>
+            </div>
+            <div class="photo-viewer-image-container">
+                <img id="photoViewerImage" src="" alt="" />
+                <div class="photo-zoom-controls">
+                    <button onclick="zoomPhoto(-0.2)">🔍-</button>
+                    <button onclick="resetZoom()">↻</button>
+                    <button onclick="zoomPhoto(0.2)">🔍+</button>
+                </div>
+            </div>
+            <div class="photo-details">
+                <div class="photo-info">
+                    <h3 id="photoViewerTitle"></h3>
+                    <p id="photoViewerDate"></p>
+                </div>
+                <div class="photo-comments-section">
+                    <h4>💬 Comentarios</h4>
+                    <div class="comments-list" id="commentsList"></div>
+                    <div class="add-comment-form">
+                        <div class="comment-input-group">
+                            <select id="commentUser">
+                                <option value="juan">👨 Juan</option>
+                                <option value="ana">👩 Ana</option>
+                            </select>
+                            <textarea id="commentText" placeholder="Escribe un comentario..." rows="3"></textarea>
+                        </div>
+                        <button onclick="addComment()" class="add-comment-btn">💕 Agregar Comentario</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </body>
 </html>
 

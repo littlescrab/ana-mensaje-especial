@@ -570,6 +570,12 @@ body::before {
     height: 200px;
     object-fit: cover;
     display: block;
+    cursor: pointer;
+    transition: transform 0.3s ease;
+}
+
+.photo-item img:hover {
+    transform: scale(1.02);
 }
 
 .photo-overlay {
@@ -1122,6 +1128,62 @@ body::before {
     color: #e8e6e3;
     font-size: 0.9em;
     transition: all 0.3s ease;
+}
+
+/* Mejorar visibilidad de iconos de fecha y hora */
+.form-group input[type="date"], 
+.form-group input[type="time"] {
+    background: rgba(248, 215, 218, 0.95);
+    color: #1a0d2e;
+    font-weight: 600;
+    border: 2px solid rgba(214, 51, 132, 0.6);
+    cursor: pointer;
+}
+
+.form-group input[type="date"]:focus, 
+.form-group input[type="time"]:focus {
+    background: rgba(248, 215, 218, 1);
+    color: #1a0d2e;
+    border-color: #d63384;
+    box-shadow: 0 0 15px rgba(214, 51, 132, 0.5);
+}
+
+/* Iconos del navegador más visibles */
+.form-group input[type="date"]::-webkit-calendar-picker-indicator,
+.form-group input[type="time"]::-webkit-calendar-picker-indicator {
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"><path fill="%23d63384" d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z"/></svg>');
+    cursor: pointer;
+    opacity: 1;
+    background-size: 16px 16px;
+    background-repeat: no-repeat;
+    background-position: center;
+    filter: brightness(1.2) contrast(1.2);
+}
+
+/* Para los inputs de tiempo - icono de reloj */
+.form-group input[type="time"]::-webkit-calendar-picker-indicator {
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"><path fill="%23d63384" d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M16.2,16.2L11,13V7H12.5V12.2L17,14.7L16.2,16.2Z"/></svg>');
+}
+
+/* Estilos específicos para Firefox */
+.form-group input[type="date"] {
+    position: relative;
+}
+
+.form-group input[type="date"]::-moz-focus-inner {
+    border: 0;
+}
+
+/* Placeholder más visible para estos campos */
+.form-group input[type="date"]::before {
+    content: attr(placeholder);
+    color: rgba(26, 13, 46, 0.7);
+    margin-right: 0.5em;
+}
+
+.form-group input[type="date"]:focus::before,
+.form-group input[type="date"]:valid::before {
+    display: none;
 }
 
 .form-group textarea {
@@ -1730,6 +1792,341 @@ body::before {
 
 .notification.info {
     background: linear-gradient(135deg, #2196F3, #64b5f6);
+}
+
+/* Photo Viewer Modal Styles */
+.photo-viewer-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.95);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+}
+
+.photo-viewer-modal.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+.photo-viewer-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    cursor: pointer;
+}
+
+.photo-viewer-content {
+    position: relative;
+    width: 95vw;
+    height: 95vh;
+    display: grid;
+    grid-template-columns: 1fr 400px;
+    gap: 20px;
+    z-index: 2001;
+    pointer-events: auto;
+}
+
+.photo-viewer-close {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    background: rgba(214, 51, 132, 0.9);
+    color: #f8d7da;
+    border: none;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    font-size: 1.5em;
+    cursor: pointer;
+    z-index: 2002;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.photo-viewer-close:hover {
+    background: rgba(214, 51, 132, 1);
+    transform: scale(1.1);
+}
+
+.photo-viewer-nav {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    transform: translateY(-50%);
+    display: flex;
+    justify-content: space-between;
+    padding: 0 20px;
+    z-index: 2002;
+    pointer-events: none;
+}
+
+.photo-nav-btn {
+    background: rgba(214, 51, 132, 0.8);
+    color: #f8d7da;
+    border: none;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    font-size: 1.5em;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: auto;
+}
+
+.photo-nav-btn:hover {
+    background: rgba(214, 51, 132, 1);
+    transform: scale(1.1);
+}
+
+.photo-nav-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.photo-viewer-image-container {
+    position: relative;
+    background: rgba(26, 13, 46, 0.9);
+    border-radius: 15px;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid rgba(248, 215, 218, 0.2);
+}
+
+#photoViewerImage {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    cursor: grab;
+    transition: transform 0.3s ease;
+    user-select: none;
+}
+
+#photoViewerImage:active {
+    cursor: grabbing;
+}
+
+.photo-zoom-controls {
+    position: absolute;
+    bottom: 15px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 10px;
+    background: rgba(26, 13, 46, 0.9);
+    padding: 10px;
+    border-radius: 25px;
+    border: 1px solid rgba(248, 215, 218, 0.3);
+}
+
+.photo-zoom-controls button {
+    background: linear-gradient(135deg, #d63384 0%, #8b2635 100%);
+    color: #f8d7da;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 15px;
+    cursor: pointer;
+    font-size: 0.9em;
+    transition: all 0.3s ease;
+    min-width: 40px;
+}
+
+.photo-zoom-controls button:hover {
+    background: linear-gradient(135deg, #8b2635 0%, #d63384 100%);
+    transform: scale(1.05);
+}
+
+.photo-details {
+    background: linear-gradient(135deg, rgba(26, 13, 46, 0.95) 0%, rgba(45, 27, 61, 0.95) 100%);
+    border-radius: 15px;
+    padding: 20px;
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(248, 215, 218, 0.2);
+    overflow-y: auto;
+    max-height: 100%;
+}
+
+.photo-info h3 {
+    color: #f8d7da;
+    margin: 0 0 10px 0;
+    font-size: 1.3em;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+}
+
+.photo-info p {
+    color: #e8c5ca;
+    margin: 0 0 20px 0;
+    font-size: 0.9em;
+    opacity: 0.9;
+}
+
+.photo-comments-section h4 {
+    color: #f8d7da;
+    margin: 0 0 15px 0;
+    font-size: 1.1em;
+    border-bottom: 2px solid rgba(214, 51, 132, 0.3);
+    padding-bottom: 8px;
+}
+
+.comments-list {
+    max-height: 300px;
+    overflow-y: auto;
+    margin-bottom: 20px;
+}
+
+.comment-item {
+    background: rgba(45, 27, 61, 0.6);
+    padding: 12px;
+    border-radius: 10px;
+    margin-bottom: 10px;
+    border-left: 3px solid #d63384;
+}
+
+.comment-item.juan {
+    border-left-color: #4a7c59;
+}
+
+.comment-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.comment-user {
+    font-weight: 600;
+    color: #f8d7da;
+    font-size: 0.9em;
+}
+
+.comment-user.juan {
+    color: #81c784;
+}
+
+.comment-date {
+    font-size: 0.75em;
+    color: #e8c5ca;
+    opacity: 0.8;
+}
+
+.comment-text {
+    color: #e8e6e3;
+    line-height: 1.4;
+    font-size: 0.9em;
+}
+
+.add-comment-form {
+    border-top: 1px solid rgba(248, 215, 218, 0.2);
+    padding-top: 15px;
+}
+
+.comment-input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.comment-input-group select {
+    padding: 8px 12px;
+    border: 2px solid rgba(214, 51, 132, 0.3);
+    border-radius: 8px;
+    background: rgba(26, 13, 46, 0.8);
+    color: #e8e6e3;
+    font-size: 0.9em;
+}
+
+.comment-input-group textarea {
+    padding: 10px 12px;
+    border: 2px solid rgba(214, 51, 132, 0.3);
+    border-radius: 8px;
+    background: rgba(26, 13, 46, 0.8);
+    color: #e8e6e3;
+    font-size: 0.9em;
+    resize: vertical;
+    min-height: 80px;
+    font-family: inherit;
+}
+
+.comment-input-group select:focus,
+.comment-input-group textarea:focus {
+    outline: none;
+    border-color: #d63384;
+    box-shadow: 0 0 10px rgba(214, 51, 132, 0.3);
+}
+
+.comment-input-group textarea::placeholder {
+    color: rgba(232, 230, 227, 0.6);
+}
+
+.add-comment-btn {
+    background: linear-gradient(135deg, #d63384 0%, #8b2635 100%);
+    color: #f8d7da;
+    border: none;
+    padding: 12px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.9em;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    width: 100%;
+}
+
+.add-comment-btn:hover {
+    background: linear-gradient(135deg, #8b2635 0%, #d63384 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(214, 51, 132, 0.4);
+}
+
+.no-comments {
+    text-align: center;
+    color: #e8c5ca;
+    opacity: 0.7;
+    font-style: italic;
+    padding: 20px;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .photo-viewer-content {
+        grid-template-columns: 1fr;
+        grid-template-rows: 1fr auto;
+        width: 100vw;
+        height: 100vh;
+        gap: 0;
+    }
+    
+    .photo-details {
+        border-radius: 15px 15px 0 0;
+        max-height: 40vh;
+    }
+    
+    .photo-viewer-image-container {
+        border-radius: 0;
+    }
+    
+    .photo-nav-btn {
+        width: 40px;
+        height: 40px;
+        font-size: 1.2em;
+    }
 }
 
 /* Responsive Design */

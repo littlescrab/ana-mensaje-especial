@@ -221,9 +221,12 @@ class WeeklyPlanner {
         this.anaActivitiesEl = document.getElementById('anaActivities');
         this.sharedActivitiesEl = document.getElementById('sharedActivities');
         
-        // Set default values
+        // Set default values - Fix timezone issues
         const today = new Date();
-        this.activityDate.value = today.toISOString().split('T')[0];
+        const year = today.getFullYear();
+        const month = String(today.getMonth() + 1).padStart(2, '0');
+        const day = String(today.getDate()).padStart(2, '0');
+        this.activityDate.value = `${year}-${month}-${day}`;
         
         // Set default times
         const now = new Date();
@@ -410,24 +413,34 @@ class WeeklyPlanner {
         const days = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
         const today = new Date();
         
-        // Get start of week
+        // Get start of week - Fix timezone issues
         const startOfWeek = new Date(this.currentWeek);
-        startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
+        startOfWeek.setHours(0, 0, 0, 0);
+        const dayOfWeek = startOfWeek.getDay();
+        startOfWeek.setDate(startOfWeek.getDate() - dayOfWeek);
         
         let html = '';
         
         for (let i = 0; i < 7; i++) {
             const currentDay = new Date(startOfWeek);
             currentDay.setDate(startOfWeek.getDate() + i);
-            
+            currentDay.setHours(0, 0, 0, 0);
+
             const isToday = currentDay.toDateString() === today.toDateString();
+
+            // 🔧 FORMAT using YYYY-MM-DD format consistently
+            const year = currentDay.getFullYear();
+            const month = String(currentDay.getMonth() + 1).padStart(2, '0');
+            const day = String(currentDay.getDate()).padStart(2, '0');
+            const formattedDay = `${year}-${month}-${day}`;
+
             const dayActivities = this.activities.filter(activity => 
-                activity.date === currentDay.toISOString().split('T')[0]
+                activity.date === formattedDay
             );
-            
+
             const options = { day: 'numeric', month: 'short' };
             const formattedDate = currentDay.toLocaleDateString('es-ES', options);
-            
+
             html += `
                 <div class="day-column">
                     <div class="day-header ${isToday ? 'today' : ''}">
@@ -440,6 +453,7 @@ class WeeklyPlanner {
                 </div>
             `;
         }
+
         
         this.daysContainer.innerHTML = html;
     }
@@ -494,10 +508,19 @@ class WeeklyPlanner {
             filteredActivities = filteredActivities.filter(activity => activity.category === categoryFilter);
         }
         
-        // Apply time filter
+        // Time filter - Fix timezone issues
         const now = new Date();
-        const today = now.toISOString().split('T')[0];
-        const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        const today = `${year}-${month}-${day}`;
+        
+        const tomorrowDate = new Date(now);
+        tomorrowDate.setDate(tomorrowDate.getDate() + 1);
+        const tomorrowYear = tomorrowDate.getFullYear();
+        const tomorrowMonth = String(tomorrowDate.getMonth() + 1).padStart(2, '0');
+        const tomorrowDay = String(tomorrowDate.getDate()).padStart(2, '0');
+        const tomorrow = `${tomorrowYear}-${tomorrowMonth}-${tomorrowDay}`;
         
         if (timeFilter === 'today') {
             filteredActivities = filteredActivities.filter(activity => activity.date === today);
@@ -505,16 +528,24 @@ class WeeklyPlanner {
             filteredActivities = filteredActivities.filter(activity => activity.date === tomorrow);
         } else if (timeFilter === 'week') {
             const weekStart = new Date(this.currentWeek);
-            weekStart.setDate(this.currentWeek.getDate() - this.currentWeek.getDay());
+            weekStart.setHours(0, 0, 0, 0);
+            const dayOfWeek = weekStart.getDay();
+            weekStart.setDate(weekStart.getDate() - dayOfWeek);
+            
             const weekEnd = new Date(weekStart);
             weekEnd.setDate(weekStart.getDate() + 6);
             
             filteredActivities = filteredActivities.filter(activity => {
-                const activityDate = new Date(activity.date);
+                const activityDate = new Date(activity.date + 'T00:00:00');
                 return activityDate >= weekStart && activityDate <= weekEnd;
             });
         } else if (timeFilter === 'upcoming') {
-            filteredActivities = filteredActivities.filter(activity => new Date(activity.date) >= now.setHours(0,0,0,0));
+            const todayStart = new Date(now);
+            todayStart.setHours(0, 0, 0, 0);
+            filteredActivities = filteredActivities.filter(activity => {
+                const activityDate = new Date(activity.date + 'T00:00:00');
+                return activityDate >= todayStart;
+            });
         }
         
         // Sort activities
@@ -540,7 +571,13 @@ class WeeklyPlanner {
         }
         
         const html = activities.map(activity => {
-            const activityDate = new Date(activity.date);
+            // Parse date correctly without timezone issues
+            const dateParts = activity.date.split('-');
+            const year = parseInt(dateParts[0]);
+            const month = parseInt(dateParts[1]) - 1; // Month is 0-indexed
+            const day = parseInt(dateParts[2]);
+            const activityDate = new Date(year, month, day);
+            
             const formattedDate = activityDate.toLocaleDateString('es-ES', { 
                 weekday: 'short', 
                 month: 'short', 
@@ -575,6 +612,7 @@ class WeeklyPlanner {
                 </div>
             `;
         }).join('');
+        
         
         this.activitiesList.innerHTML = html;
     }
@@ -631,9 +669,12 @@ class WeeklyPlanner {
         this.activityInput.value = '';
         this.activityDescription.value = '';
         
-        // Reset to current date and time
+        // Reset to current date and time - Fix timezone issues
         const now = new Date();
-        this.activityDate.value = now.toISOString().split('T')[0];
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        this.activityDate.value = `${year}-${month}-${day}`;
         
         const startTime = new Date(now.getTime() + 60 * 60 * 1000);
         const endTime = new Date(startTime.getTime() + 60 * 60 * 1000);
@@ -707,11 +748,18 @@ class WeeklyPlanner {
         const activity = this.activities.find(a => a.id === id);
         if (!activity) return;
         
+        // Parse date correctly without timezone issues
+        const dateParts = activity.date.split('-');
+        const year = parseInt(dateParts[0]);
+        const month = parseInt(dateParts[1]) - 1; // Month is 0-indexed
+        const day = parseInt(dateParts[2]);
+        const activityDate = new Date(year, month, day);
+        
         // For now, just show an alert with activity details
         const details = `
             📝 ${activity.title}
             👤 ${activity.user === 'juan' ? 'Juan' : 'Ana'}
-            📅 ${new Date(activity.date).toLocaleDateString('es-ES')}
+            📅 ${activityDate.toLocaleDateString('es-ES')}
             ⏰ ${activity.startTime}${activity.endTime !== activity.startTime ? ' - ' + activity.endTime : ''}
             🏷️ ${this.getCategoryName(activity.category)}
             ${activity.description ? '\n📄 ' + activity.description : ''}
@@ -975,11 +1023,14 @@ function displayPhotos(photos) {
         return;
     }
     
+    // Store photos globally for viewer
+    window.currentPhotos = photos;
+    
     photoGrid.innerHTML = photos.map((photo, index) => {
         const src = photo.data;
         return `
             <div class="photo-item">
-                <img src="${src}" alt="${photo.name}" onerror="this.style.display='none'">
+                <img src="${src}" alt="${photo.name}" onerror="this.style.display='none'" onclick="window.openPhotoViewer(${index})" style="cursor: pointer;">
                 <div class="photo-overlay">
                     <span class="sync-indicator" style="position: absolute; top: 5px; right: 5px; background: rgba(76, 175, 80, 0.8); color: white; padding: 2px 6px; border-radius: 10px; font-size: 0.7em;">☁️</span>
                 </div>
@@ -1001,8 +1052,24 @@ function loadExistingPhotos() {
     // Load saved photos from localStorage
     const savedPhotos = JSON.parse(localStorage.getItem('albumPhotos') || '[]');
     
-    // Combine existing and saved photos
-    const allPhotos = [...existingPhotos.map(name => ({ name, type: 'existing' })), ...savedPhotos];
+    // Combine existing and saved photos with proper structure
+    const allPhotos = [
+        ...existingPhotos.map((name, index) => ({ 
+            id: `existing_${index}`,
+            name, 
+            data: name, 
+            type: 'existing',
+            date: new Date().toISOString(),
+            comments: JSON.parse(localStorage.getItem(`photo_comments_existing_${index}`) || '[]')
+        })), 
+        ...savedPhotos.map(photo => ({
+            ...photo,
+            comments: JSON.parse(localStorage.getItem(`photo_comments_${photo.id}`) || '[]')
+        }))
+    ];
+    
+    // Store photos globally for viewer
+    window.currentPhotos = allPhotos;
     
     if (allPhotos.length === 0) {
         photoGrid.innerHTML = '<p style="color: #888; text-align: center; font-style: italic; grid-column: 1 / -1;">No hay fotos en el álbum. ¡Agrega algunas!</p>';
@@ -1013,7 +1080,7 @@ function loadExistingPhotos() {
         const src = photo.type === 'existing' ? photo.name : photo.data;
         return `
             <div class="photo-item">
-                <img src="${src}" alt="Foto ${index + 1}" onerror="this.style.display='none'">
+                <img src="${src}" alt="Foto ${index + 1}" onerror="this.style.display='none'" onclick="window.openPhotoViewer(${index})" style="cursor: pointer;">
                 <div class="photo-overlay">
                     <button class="delete-photo" onclick="deletePhoto(${index}, '${photo.type}')">
                         <i class="fas fa-trash"></i>
@@ -1417,11 +1484,219 @@ function createGerberaExplosion() {
     }
 }
 
+// === PHOTO VIEWER FUNCTIONALITY === //
+let currentPhotoIndex = 0;
+let currentZoom = 1;
+let isDragging = false;
+let dragStart = { x: 0, y: 0 };
+let imagePos = { x: 0, y: 0 };
+
+window.openPhotoViewer = function(index) {
+    console.log('Opening photo viewer for index:', index);
+    currentPhotoIndex = index;
+    const modal = document.getElementById('photoViewerModal');
+    const photo = window.currentPhotos[index];
+    
+    if (!photo) {
+        console.error('No photo found at index:', index);
+        return;
+    }
+    
+    console.log('Photo data:', photo);
+    
+    // Set image
+    const img = document.getElementById('photoViewerImage');
+    img.src = photo.data || photo.name;
+    
+    // Set photo info
+    document.getElementById('photoViewerTitle').textContent = photo.name || `Foto ${index + 1}`;
+    const date = photo.date ? new Date(photo.date).toLocaleDateString('es-ES') : 'Fecha desconocida';
+    document.getElementById('photoViewerDate').textContent = date;
+    
+    // Load comments
+    loadPhotoComments(photo.id || `existing_${index}`);
+    
+    
+    // Show modal
+    modal.classList.add('active');
+    
+    // Reset zoom and position
+    resetZoom();
+    
+    
+    // Update navigation buttons
+    updateNavigationButtons();
+    
+    // Setup image dragging
+    setupImageDragging();
+}
+
+window.closePhotoViewer = function() {
+    const modal = document.getElementById('photoViewerModal');
+    modal.classList.remove('active');
+    currentZoom = 1;
+    imagePos = { x: 0, y: 0 };
+}
+
+window.navigatePhoto = function(direction) {
+    const newIndex = currentPhotoIndex + direction;
+    
+    if (newIndex >= 0 && newIndex < window.currentPhotos.length) {
+        window.openPhotoViewer(newIndex);
+    }
+}
+
+function updateNavigationButtons() {
+    const prevBtn = document.getElementById('prevPhotoBtn');
+    const nextBtn = document.getElementById('nextPhotoBtn');
+    
+    prevBtn.disabled = currentPhotoIndex === 0;
+    nextBtn.disabled = currentPhotoIndex === window.currentPhotos.length - 1;
+}
+
+window.zoomPhoto = function(delta) {
+    currentZoom += delta;
+    currentZoom = Math.max(0.5, Math.min(3, currentZoom)); // Limit zoom between 0.5x and 3x
+    
+    const img = document.getElementById('photoViewerImage');
+    img.style.transform = `translate(${imagePos.x}px, ${imagePos.y}px) scale(${currentZoom})`;
+}
+
+window.resetZoom = function() {
+    currentZoom = 1;
+    imagePos = { x: 0, y: 0 };
+    
+    const img = document.getElementById('photoViewerImage');
+    img.style.transform = 'translate(0px, 0px) scale(1)';
+}
+
+function setupImageDragging() {
+    const img = document.getElementById('photoViewerImage');
+    
+    img.addEventListener('mousedown', (e) => {
+        if (currentZoom > 1) {
+            isDragging = true;
+            dragStart.x = e.clientX - imagePos.x;
+            dragStart.y = e.clientY - imagePos.y;
+            img.style.cursor = 'grabbing';
+        }
+    });
+    
+    document.addEventListener('mousemove', (e) => {
+        if (isDragging && currentZoom > 1) {
+            imagePos.x = e.clientX - dragStart.x;
+            imagePos.y = e.clientY - dragStart.y;
+            
+            img.style.transform = `translate(${imagePos.x}px, ${imagePos.y}px) scale(${currentZoom})`;
+        }
+    });
+    
+    document.addEventListener('mouseup', () => {
+        isDragging = false;
+        img.style.cursor = 'grab';
+    });
+}
+
+// === PHOTO COMMENTS FUNCTIONALITY === //
+function loadPhotoComments(photoId) {
+    const comments = JSON.parse(localStorage.getItem(`photo_comments_${photoId}`) || '[]');
+    displayComments(comments);
+}
+
+function displayComments(comments) {
+    const commentsList = document.getElementById('commentsList');
+    
+    if (comments.length === 0) {
+        commentsList.innerHTML = '<div class="no-comments">💭 No hay comentarios aún. ¡Sé el primero en comentar!</div>';
+        return;
+    }
+    
+    commentsList.innerHTML = comments.map(comment => `
+        <div class="comment-item ${comment.user}">
+            <div class="comment-header">
+                <span class="comment-user ${comment.user}">${comment.user === 'juan' ? '👨 Juan' : '👩 Ana'}</span>
+                <span class="comment-date">${new Date(comment.date).toLocaleDateString('es-ES')}</span>
+            </div>
+            <div class="comment-text">${comment.text}</div>
+        </div>
+    `).join('');
+    
+    // Scroll to bottom
+    commentsList.scrollTop = commentsList.scrollHeight;
+}
+
+window.addComment = function() {
+    const user = document.getElementById('commentUser').value;
+    const text = document.getElementById('commentText').value.trim();
+    
+    if (!text) {
+        showNotification('⚠️ Por favor escribe un comentario');
+        return;
+    }
+    
+    const photo = window.currentPhotos[currentPhotoIndex];
+    const photoId = photo.id || `existing_${currentPhotoIndex}`;
+    
+    const comment = {
+        id: Date.now(),
+        user,
+        text,
+        date: new Date().toISOString()
+    };
+    
+    // Get existing comments
+    const comments = JSON.parse(localStorage.getItem(`photo_comments_${photoId}`) || '[]');
+    comments.push(comment);
+    
+    // Save comments
+    localStorage.setItem(`photo_comments_${photoId}`, JSON.stringify(comments));
+    
+    // Update display
+    displayComments(comments);
+    
+    // Clear form
+    document.getElementById('commentText').value = '';
+    
+    showNotification('💕 Comentario agregado');
+    
+    // Try to save to Firebase
+    saveCommentToFirebase(photoId, comment);
+}
+
+async function saveCommentToFirebase(photoId, comment) {
+    try {
+        if (window.db && collection && addDoc) {
+            await addDoc(collection(window.db, 'photo_comments'), {
+                photoId,
+                ...comment,
+                timestamp: serverTimestamp()
+            });
+            console.log('Comment saved to Firebase');
+        }
+    } catch (error) {
+        console.error('Error saving comment to Firebase:', error);
+    }
+}
+
 // === KEYBOARD SHORTCUTS === //
 document.addEventListener('keydown', function(e) {
-    // ESC to go back to menu
-    if (e.key === 'Escape' && currentSection !== 'menu') {
-        showSection('menu');
+    // ESC to go back to menu or close photo viewer
+    if (e.key === 'Escape') {
+        const photoModal = document.getElementById('photoViewerModal');
+        if (photoModal.classList.contains('active')) {
+            closePhotoViewer();
+        } else if (currentSection !== 'menu') {
+            showSection('menu');
+        }
+    }
+    
+    // Arrow keys for photo navigation
+    if (document.getElementById('photoViewerModal').classList.contains('active')) {
+        if (e.key === 'ArrowLeft') {
+            navigatePhoto(-1);
+        } else if (e.key === 'ArrowRight') {
+            navigatePhoto(1);
+        }
     }
     
     // Ctrl+S to save message (in proposal section)
