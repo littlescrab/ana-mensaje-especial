@@ -1,10 +1,15 @@
 // App State
 let currentSection = 'menu';
-let timer = null;
-let timeRemaining = 0;
-let isTimerRunning = false;
+let timerInterval;
 let isBreakTime = false;
-let pomodoroCycle = 0;
+let cycleCount = 0;
+
+// Ejemplo de configuración
+const config = {
+  focusDuration: 25, // minutos
+  breakDuration: 5,  // minutos
+  totalCycles: 4     // ciclos completos
+};
 
 // === THEME SYSTEM === //
 let currentTheme = 'dark'; // 'dark' or 'light'
@@ -924,7 +929,10 @@ class WeeklyPlanner {
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize theme first
     initializeTheme();
-    
+    const themeBtn = document.getElementById('themeToggle');
+    if (themeBtn) {
+        themeBtn.addEventListener('click', toggleTheme);
+    }
     // Initialize app immediately (no password protection)
     initializeApp();
     initializeFirebaseAndData();
@@ -1302,18 +1310,134 @@ function deletePhoto(index, type) {
 }
 
 // === POMODORO SECTION === //
+function startPomodoro() {
+    const focusTime = parseInt(document.getElementById('focusTime').value) * 60;
+    const breakTime = parseInt(document.getElementById('breakTime').value) * 60;
+    const totalCycles = parseInt(document.getElementById('totalCycles').value);
+    const timerDisplay = document.getElementById('timerDisplay');
+    const timerMode = document.getElementById('timerMode');
+    const currentCycle = document.getElementById('currentCycle');
+    const targetCycles = document.getElementById('targetCycles');
+    const progressBar = document.querySelector('.productivity-indicator');
+    const soundSelect = document.getElementById('notificationSound');
+    const currentDate = document.getElementById('currentDate');
+  
+    let remainingTime = focusTime;
+  
+    cycleCount = 0;
+    currentCycle.textContent = cycleCount;
+    targetCycles.textContent = totalCycles;
+    isBreakTime = false; // 🟢 Asegura que inicie en concentración
+  
+    updateDisplay();
+    updateProgressBar();
+  
+    function playSound() {
+      const selectedSound = soundSelect.value;
+      const audio = new Audio(`sounds/${selectedSound}.mp3`);
+      audio.play().catch(err => console.warn("🔇 Sonido bloqueado por navegador: ", err));
+    }
+  
+    function showNotification(message) {
+      const notification = document.createElement("div");
+      notification.className = "status-text connected";
+      notification.textContent = message;
+      document.body.appendChild(notification);
+      setTimeout(() => {
+        notification.remove();
+      }, 3000);
+    }
+  
+    function updateDisplay() {
+      const minutes = Math.floor(remainingTime / 60);
+      const seconds = remainingTime % 60;
+      timerDisplay.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+      timerMode.textContent = isBreakTime ? '☕ Descanso' : '📚 Concentración';
+      const now = new Date();
+      currentDate.textContent = now.toLocaleString('es-PE');
+    }
+  
+    function updateProgressBar() {
+        const progress = ((cycleCount + (isBreakTime ? 0.5 : 0)) / totalCycles) * 100;
+        progressBar.style.width = `${progress}%`;
+        progressBar.dataset.progress = `${Math.round(progress)}%`;
+        const percentLabel = document.getElementById('progressPercent');
+        if (percentLabel) {
+            percentLabel.textContent = `${Math.round(progress)}%`;
+        }
+    }
+  
+    function switchMode() {
+      isBreakTime = !isBreakTime;
+      remainingTime = isBreakTime ? breakTime : focusTime;
+      updateDisplay();
+      updateProgressBar();
+      playSound();
+      showNotification(isBreakTime ? "🌿 Hora de un merecido descanso" : "🔥 A concentrarse con todo, tú puedes");
+    }
+  
+    function startCycle(first = false) {
+      if (!first) switchMode();
+  
+      timerInterval = setInterval(() => {
+        remainingTime--;
+        updateDisplay();
+  
+        const phaseDuration = isBreakTime ? breakTime : focusTime;
+        const totalElapsedSeconds = (phaseDuration - remainingTime);
+        const progressInPhase = (totalElapsedSeconds / phaseDuration) * 100;
+        progressBar.style.width = `${progressInPhase}%`;
+        progressBar.dataset.progress = `${Math.round(progressInPhase)}%`;
+  
+        if (remainingTime <= 0) {
+          clearInterval(timerInterval);
+          if (!isBreakTime) {
+            cycleCount++;
+            currentCycle.textContent = cycleCount;
+          }
+          if (cycleCount < totalCycles) {
+            setTimeout(startCycle, 500);
+          } else {
+            timerMode.textContent = '🎉 Sesión Completa';
+            timerDisplay.textContent = '00:00';
+            progressBar.style.width = '100%';
+            progressBar.dataset.progress = '100%';
+            showNotification("🎯 ¡Todos los ciclos completados con éxito!");
+            playSound();
+          }
+        }
+      }, 1000);
+    }
+  
+    startCycle(true); // ✅ Inicia directamente en concentración
+  }
+  
+  document.getElementById('startTimer').addEventListener('click', startPomodoro);
+  document.getElementById('pauseTimer').addEventListener('click', () => clearInterval(timerInterval));
+  document.getElementById('resetTimer').addEventListener('click', () => location.reload());
+
+//MODIFICACION CHATGPT  
+
 function updateTimerSettings() {
     if (!isTimerRunning) {
+        targetCycles = parseInt(document.getElementById('totalCycles').value) || targetCycles;
+        pomodoroCycle = 0;
+        document.getElementById('targetCycles').textContent = targetCycles;
+        document.getElementById('currentCycle').textContent = `${pomodoroCycle}/${targetCycles}`;
+        resetTimer();
         updateTimerDisplay();
     }
 }
 
 function updateTimerDisplay() {
-    const focusTime = parseInt(document.getElementById('focusTime').value);
-    const breakTime = parseInt(document.getElementById('breakTime').value);
+    const focusTimeInMinutes = parseInt(document.getElementById('focusTime').value);
+    const breakTimeInMinutes = parseInt(document.getElementById('breakTime').value);
+    const focusTimeInSeconds = focusTimeInMinutes * 60;
+    const breakTimeInSeconds = breakTimeInMinutes * 60;
+    const totalTimeInSeconds = focusTimeInSeconds + breakTimeInSeconds;
     
     if (timeRemaining === 0) {
-        timeRemaining = isBreakTime ? breakTime * 60 : focusTime * 60;
+        timeRemaining = isBreakTime ? breakTimeInSeconds : focusTimeInSeconds;
     }
     
     const minutes = Math.floor(timeRemaining / 60);
@@ -1323,6 +1447,32 @@ function updateTimerDisplay() {
         `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
     
     document.getElementById('timerMode').textContent = isBreakTime ? 'Descanso' : 'Concentración';
+    
+    // Actualizar barra de progreso de productividad
+    
+    const productivityBar = document.querySelector('.productivity-indicator');
+    const progressText = document.querySelector('.productivity-indicator-text');
+    
+    if (isBreakTime) {
+        const focusProgress = '100%';
+        const breakProgress = `${((breakTimeInSeconds - timeRemaining) / breakTimeInSeconds) * 100}%`;
+        productivityBar.style.setProperty('--focus-progress', focusProgress);
+        productivityBar.style.setProperty('--break-progress', breakProgress);
+        progressText.textContent = `Descanso: ${Math.round((timeRemaining / breakTimeInSeconds) * 100)}%`;
+    } else {
+        const focusProgress = `${((focusTimeInSeconds - timeRemaining) / focusTimeInSeconds) * 100}%`;
+        const breakProgress = '0%';
+        productivityBar.style.setProperty('--focus-progress', focusProgress);
+        productivityBar.style.setProperty('--break-progress', breakProgress);
+        progressText.textContent = `Concentración: ${Math.round((timeRemaining / focusTimeInSeconds) * 100)}%`;
+    }
+    
+    document.getElementById('currentCycle').textContent = `${pomodoroCycle}/${targetCycles}`;
+
+    // Actualizar fecha
+    const now = new Date();
+    const dateOptions = { weekday: 'long', day: 'numeric', month: 'long' };
+    document.getElementById('currentDate').textContent = now.toLocaleDateString('es-ES', dateOptions);
     
     const timerCircle = document.querySelector('.timer-circle');
     timerCircle.className = 'timer-circle';
@@ -1334,42 +1484,64 @@ function updateTimerDisplay() {
     }
 }
 
+function startNextPhase() {
+    clearInterval(timer);
+    isTimerRunning = false;
+    startTime = null;
+    pausedTime = null;
+    
+    // Play notification sound
+    playNotificationSound();
+    
+    if (!isBreakTime) {
+        // Cambiar a tiempo de descanso
+        isBreakTime = true;
+        showNotification('¡Tiempo de concentración completado! Ahora toca descansar. 🎉');
+        timeRemaining = parseInt(document.getElementById('breakTime').value) * 60;
+        startTimer();
+    } else {
+        // Cambiar a tiempo de concentración
+        isBreakTime = false;
+        pomodoroCycle++;
+        
+        if (pomodoroCycle >= targetCycles) {
+            showNotification(`🎉 ¡Felicitaciones! Has completado todos tus ${targetCycles} ciclos de estudio. ¡Tómate un buen descanso! 🌟`);
+            resetTimer();
+            return;
+        }
+        
+        showNotification(`¡Excelente! Has completado ${pomodoroCycle} de ${targetCycles} ciclos. ¡Sigamos adelante! 💪`);
+        document.getElementById('currentCycle').textContent = `${pomodoroCycle}/${targetCycles}`;
+        timeRemaining = parseInt(document.getElementById('focusTime').value) * 60;
+        startTimer();
+    }
+}
+
 function startTimer() {
     if (isTimerRunning) return;
     
-    isTimerRunning = true;
+    const focusTimeInMinutes = parseInt(document.getElementById('focusTime').value);
+    const breakTimeInMinutes = parseInt(document.getElementById('breakTime').value);
+    const totalSeconds = isBreakTime ? breakTimeInMinutes * 60 : focusTimeInMinutes * 60;
     
-    if (timeRemaining === 0) {
-        const focusTime = parseInt(document.getElementById('focusTime').value);
-        const breakTime = parseInt(document.getElementById('breakTime').value);
-        timeRemaining = isBreakTime ? breakTime * 60 : focusTime * 60;
+    if (timeRemaining === 0 || timeRemaining === undefined) {
+        timeRemaining = totalSeconds;
     }
+
+    isTimerRunning = true;
+    startTime = Date.now() - ((totalSeconds - timeRemaining) * 1000);
     
     timer = setInterval(() => {
-        timeRemaining--;
+        const currentTime = Date.now();
+        const elapsedSeconds = Math.floor((currentTime - startTime) / 1000);
+        timeRemaining = Math.max(0, totalSeconds - elapsedSeconds);
         updateTimerDisplay();
         
         if (timeRemaining <= 0) {
             clearInterval(timer);
-            isTimerRunning = false;
-            
-            // Play notification sound
-            playNotificationSound();
-            
-            // Switch between focus and break
-            if (!isBreakTime) {
-                pomodoroCycle++;
-                isBreakTime = true;
-                showNotification(`¡Excelente! Completaste ${pomodoroCycle} ciclo(s) de concentración. Tiempo de descanso! 🎉`);
-            } else {
-                isBreakTime = false;
-                showNotification('¡Descanso terminado! Es hora de concentrarse de nuevo. 💪');
-            }
-            
-            timeRemaining = 0;
-            updateTimerDisplay();
+            startNextPhase();
         }
-    }, 1000);
+    }, 100);
     
     updateTimerDisplay();
 }
@@ -1379,14 +1551,20 @@ function pauseTimer() {
     
     isTimerRunning = false;
     clearInterval(timer);
+    pausedTime = timeRemaining;
+    startTime = null;
     updateTimerDisplay();
 }
 
 function resetTimer() {
     isTimerRunning = false;
+    pomodoroCycle = 0;
+    document.getElementById('currentCycle').textContent = `0/${targetCycles}`;
     clearInterval(timer);
     timeRemaining = 0;
     isBreakTime = false;
+    startTime = null;
+    pausedTime = null;
     updateTimerDisplay();
 }
 

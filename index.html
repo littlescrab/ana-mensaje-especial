@@ -40,7 +40,7 @@
                     <p class="subtitle">Un lugar especial creado solo para nosotros <span class="code-accent">♥</span></p>
                 </div>
                 <div class="header-controls">
-                    <button id="themeToggle" class="theme-toggle" title="Cambiar tema">
+                    <button id="themeToggle" class="theme-Toggle" title="Cambiar tema">
                         ☀️ Claro
                     </button>
                 </div>
@@ -166,10 +166,15 @@
                 <div class="timer-display">
                     <div class="timer-circle">
                         <div class="timer-text">
-                            <span id="timerDisplay">25:00</span>
-                            <span id="timerMode">Concentración</span>
+                          <span id="timerDisplay">25:00</span>
+                          <span id="timerMode">Concentración</span>
                         </div>
-                    </div>
+                        <div class="timer-footer">
+                          <span id="currentDate"></span>
+                          <span id="progressPercent">0%</span>
+                        </div>
+                      </div>
+                      <div class="productivity-indicator" data-progress="0%"></div>                      
                 </div>
                 
                 <div class="timer-controls">
@@ -178,25 +183,33 @@
                     <button id="resetTimer">⏹️ Reiniciar</button>
                 </div>
 
-                <div class="timer-settings">
-                    <h3>Configuración</h3>
+                <div class="timer-settings vintage-box">
+                    <h3>⚙️ Configuración</h3>
                     <div class="setting-group">
-                        <label>Tiempo de Concentración (minutos):</label>
+                        <label>📚 Ciclos de Estudio:</label>
+                        <input type="number" id="totalCycles" value="4" min="1" max="10">
+                        <div class="cycles-display">
+                            <span>Ciclo actual: </span>
+                            <span id="currentCycle">0</span> / <span id="targetCycles">4</span>
+                        </div>
+                    </div>
+                    <div class="setting-group">
+                        <label>⏰ Tiempo de Concentración (minutos):</label>
                         <input type="number" id="focusTime" value="25" min="1" max="120">
                     </div>
                     <div class="setting-group">
-                        <label>Tiempo de Descanso (minutos):</label>
+                        <label>☕ Tiempo de Descanso (minutos):</label>
                         <input type="number" id="breakTime" value="5" min="1" max="30">
                     </div>
                     <div class="setting-group">
-                        <label>Sonido de Notificación:</label>
+                        <label>🔔 Sonido de Notificación:</label>
                         <select id="notificationSound">
                             <option value="bell">Campana</option>
                             <option value="chime">Campanita</option>
                             <option value="soft">Suave</option>
                             <option value="nature">Naturaleza</option>
                         </select>
-                        <button id="testSound">🔊 Probar</button>
+                        <button id="testSound" class="vintage-button">🔊 Probar</button>
                     </div>
                 </div>
             </div>
