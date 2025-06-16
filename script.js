@@ -1757,63 +1757,34 @@ function setupProposalEventListeners() {
 function createFloatingGerberas() {
     const container = document.getElementById('gerberasContainer');
     if (!container) return;
-
+    
     const gerberas = ['🌻', '🌺', '🌼', '🌷', '🌸'];
-    const totalGerberas = 25;
-    const activeGerberas = [];
-
-    class Gerbera {
-        constructor() {
-            this.el = document.createElement('div');
-            this.el.className = 'gerbera-float';
-            this.el.textContent = gerberas[Math.floor(Math.random() * gerberas.length)];
-            container.appendChild(this.el);
-
-            this.size = 48 + Math.random() * 24; // Tamaño base
-            this.x = Math.random() * (window.innerWidth - this.size);
-            this.y = Math.random() * (window.innerHeight - this.size);
-            this.vx = (Math.random() - 0.5) * 1.2; // velocidad X
-            this.vy = (Math.random() - 0.5) * 1.2; // velocidad Y
-        }
-
-        update() {
-            this.x += this.vx;
-            this.y += this.vy;
-
-            // Rebote horizontal
-            if (this.x <= 0 || this.x >= window.innerWidth - this.size) {
-                this.vx *= -1;
+    
+    function addGerbera() {
+        const gerbera = document.createElement('div');
+        gerbera.className = 'gerbera-float';
+        gerbera.textContent = gerberas[Math.floor(Math.random() * gerberas.length)];
+        gerbera.style.left = Math.random() * 100 + 'vw';
+        gerbera.style.animationDuration = (Math.random() * 10 + 10) + 's';
+        gerbera.style.opacity = Math.random() * 0.3 + 0.1;
+        
+        container.appendChild(gerbera);
+        
+        // Remove gerbera after animation
+        setTimeout(() => {
+            if (gerbera.parentNode) {
+                gerbera.parentNode.removeChild(gerbera);
             }
-
-            // Rebote vertical
-            if (this.y <= 0 || this.y >= window.innerHeight - this.size) {
-                this.vy *= -1;
-            }
-
-            this.el.style.transform = `translate(${this.x}px, ${this.y}px)`;
-        }
-
-        destroy() {
-            this.el.remove();
-        }
+        }, 20000);
     }
-
-    // Crear las 25 gerberas iniciales
-    for (let i = 0; i < totalGerberas; i++) {
-        activeGerberas.push(new Gerbera());
+    
+    // Add gerberas periodically
+    setInterval(addGerbera, 3000);
+    // Add initial gerberas
+    for (let i = 0; i < 3; i++) {
+        setTimeout(addGerbera, i * 1000);
     }
-
-    // Animación global
-    function animateAll() {
-        activeGerberas.forEach(g => g.update());
-        requestAnimationFrame(animateAll);
-    }
-
-    animateAll();
 }
-
-
-
 
 // Create gerbera explosion effect
 function createGerberaExplosion() {
