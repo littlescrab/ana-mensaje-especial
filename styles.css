@@ -1078,6 +1078,10 @@ body::before {
     transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     position: relative;
     overflow: hidden;
+    /* Ensure emoji is rendered clearly */
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
 
 .soft-icon::before {
@@ -1088,9 +1092,10 @@ body::before {
     right: 0;
     bottom: 0;
     border-radius: 50%;
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.1));
-    backdrop-filter: blur(10px);
+    /* REMOVED: backdrop-filter blur that was causing the diffused effect */
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.05));
     transition: all 0.4s ease;
+    z-index: -1; /* Place behind the emoji content */
 }
 
 .icon-proposal {

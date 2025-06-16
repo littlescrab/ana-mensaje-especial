@@ -1074,8 +1074,12 @@ function showSection(sectionName) {
         // Load photos when album section is shown
         if (sectionName === 'album') {
             console.log('🌻 Cargando álbum de fotos...');
-            // Always load to ensure proper initialization
-            loadExistingPhotos();
+            // Try to load from Firebase first, fallback to local
+            if (window.db) {
+                loadPhotosFromFirebase();
+            } else {
+                loadExistingPhotos();
+            }
         }
     } else {
         document.querySelector('.menu').style.display = 'grid';
@@ -1483,10 +1487,13 @@ function startContinuousAudio(phase) {
             showNotification(`🎵 Audio relajante activado para ${phase === 'focus' ? 'concentración' : 'descanso'}`, 'info');
         }).catch(error => {
             console.log('🔇 Error iniciando audio continuo:', error);
-            currentAudio = null;
+            // Fallback to synthetic audio if file-based audio fails
+            startSyntheticContinuousAudio(phase);
         });
     } else {
-        console.log(`❌ No hay sonidos disponibles para ${phase}`);
+        console.log(`❌ No hay sonidos de archivo disponibles para ${phase}, usando sonidos sintéticos`);
+        // Use synthetic audio as fallback
+        startSyntheticContinuousAudio(phase);
     }
 }
 
@@ -1499,6 +1506,9 @@ function stopContinuousAudio() {
         currentAudio = null;
         isAudioPlaying = false;
     }
+    
+    // Also stop synthetic audio if it's playing
+    stopSyntheticAudio();
 }
 
 // 🔊 FADE OUT AUDIO GRADUALLY
@@ -1519,6 +1529,193 @@ function fadeOutContinuousAudio(duration = 2000) {
                 if (currentStep >= fadeSteps || currentAudio.volume <= 0) {
                     clearInterval(fadeInterval);
                     stopContinuousAudio();
+                }
+            } else {
+                clearInterval(fadeInterval);
+            }
+        }, stepTime);
+    }
+    
+    // Also fade out synthetic audio if it's playing
+    if (window.currentSyntheticAudio && window.currentSyntheticAudio.isPlaying) {
+        fadeOutSyntheticAudio(duration);
+    }
+}
+
+// === SYNTHETIC AUDIO SYSTEM FOR POMODORO === //
+// Generate synthetic sounds using Web Audio API as fallback
+
+// Global variables for synthetic audio
+window.currentSyntheticAudio = null;
+
+// 🎹 START SYNTHETIC CONTINUOUS AUDIO
+function startSyntheticContinuousAudio(phase) {
+    try {
+        // Stop any existing synthetic audio
+        stopSyntheticAudio();
+        
+        console.log(`🎹 Iniciando audio sintético continuo para ${phase}`);
+        
+        // Create audio context
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        
+        // Define sound characteristics based on phase
+        const soundConfig = phase === 'focus' ? {
+            // Focus: Nature-inspired sounds (birds, water)
+            type: 'nature',
+            baseFreq: 220,     // A3 note
+            harmonics: [1, 2, 3, 5],
+            volume: 0.15,
+            filterFreq: 800,
+            description: 'Sonidos naturales para concentración'
+        } : {
+            // Break: Relaxing ambient sounds
+            type: 'ambient',
+            baseFreq: 110,     // A2 note (lower, more relaxing)
+            harmonics: [1, 1.5, 2, 2.5],
+            volume: 0.12,
+            filterFreq: 400,
+            description: 'Ambiente relajante para descanso'
+        };
+        
+        // Create synthetic audio object
+        window.currentSyntheticAudio = {
+            context: audioContext,
+            oscillators: [],
+            filters: [],
+            gainNodes: [],
+            isPlaying: true,
+            phase: phase,
+            config: soundConfig
+        };
+        
+        // Generate multiple oscillators for rich sound
+        soundConfig.harmonics.forEach((harmonic, index) => {
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            const filter = audioContext.createBiquadFilter();
+            
+            // Configure oscillator
+            oscillator.type = index === 0 ? 'sine' : 'triangle';
+            oscillator.frequency.value = soundConfig.baseFreq * harmonic;
+            
+            // Configure filter for natural sound
+            filter.type = 'lowpass';
+            filter.frequency.value = soundConfig.filterFreq;
+            filter.Q.value = 0.5;
+            
+            // Configure gain with subtle variations
+            const baseVolume = soundConfig.volume / soundConfig.harmonics.length;
+            const volumeVariation = baseVolume * (0.8 + Math.random() * 0.4);
+            gainNode.gain.value = volumeVariation;
+            
+            // Connect audio nodes
+            oscillator.connect(filter);
+            filter.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            // Add subtle frequency modulation for natural feel
+            const lfo = audioContext.createOscillator();
+            const lfoGain = audioContext.createGain();
+            lfo.type = 'sine';
+            lfo.frequency.value = 0.2 + Math.random() * 0.3; // Slow modulation
+            lfoGain.gain.value = 2 + Math.random() * 3; // Subtle frequency variation
+            
+            lfo.connect(lfoGain);
+            lfoGain.connect(oscillator.frequency);
+            
+            // Start oscillators
+            oscillator.start();
+            lfo.start();
+            
+            // Store references
+            window.currentSyntheticAudio.oscillators.push(oscillator, lfo);
+            window.currentSyntheticAudio.gainNodes.push(gainNode, lfoGain);
+            window.currentSyntheticAudio.filters.push(filter);
+        });
+        
+        // Add subtle amplitude modulation for breathing effect
+        const masterGain = audioContext.createGain();
+        masterGain.gain.value = 1;
+        
+        // Create breathing effect (slow amplitude modulation)
+        const breathingLFO = audioContext.createOscillator();
+        const breathingGain = audioContext.createGain();
+        breathingLFO.type = 'sine';
+        breathingLFO.frequency.value = 0.15; // Very slow breathing rate
+        breathingGain.gain.value = 0.1; // Subtle amplitude modulation
+        
+        breathingLFO.connect(breathingGain);
+        breathingGain.connect(masterGain.gain);
+        breathingLFO.start();
+        
+        window.currentSyntheticAudio.oscillators.push(breathingLFO);
+        window.currentSyntheticAudio.gainNodes.push(masterGain, breathingGain);
+        
+        console.log(`🎵 Audio sintético iniciado: ${soundConfig.description}`);
+        showNotification(`🎹 ${soundConfig.description} activado`, 'info');
+        
+    } catch (error) {
+        console.error('🔇 Error creando audio sintético:', error);
+        showNotification('⚠️ Error creando sonidos, continuando en silencio', 'warning');
+    }
+}
+
+// 🛑 STOP SYNTHETIC AUDIO
+function stopSyntheticAudio() {
+    if (window.currentSyntheticAudio && window.currentSyntheticAudio.isPlaying) {
+        console.log('🛑 Deteniendo audio sintético');
+        
+        try {
+            // Stop all oscillators
+            window.currentSyntheticAudio.oscillators.forEach(osc => {
+                try {
+                    osc.stop();
+                } catch (e) {
+                    // Oscillator might already be stopped
+                }
+            });
+            
+            // Close audio context
+            if (window.currentSyntheticAudio.context) {
+                window.currentSyntheticAudio.context.close();
+            }
+        } catch (error) {
+            console.warn('Warning stopping synthetic audio:', error);
+        }
+        
+        window.currentSyntheticAudio.isPlaying = false;
+        window.currentSyntheticAudio = null;
+    }
+}
+
+// 🔊 FADE OUT SYNTHETIC AUDIO
+function fadeOutSyntheticAudio(duration = 2000) {
+    if (window.currentSyntheticAudio && window.currentSyntheticAudio.isPlaying) {
+        console.log('🔊 Fade out del audio sintético');
+        
+        const fadeSteps = 20;
+        const stepTime = duration / fadeSteps;
+        let currentStep = 0;
+        
+        const fadeInterval = setInterval(() => {
+            currentStep++;
+            
+            if (window.currentSyntheticAudio && window.currentSyntheticAudio.gainNodes) {
+                const fadeAmount = 1 - (currentStep / fadeSteps);
+                
+                // Fade all gain nodes
+                window.currentSyntheticAudio.gainNodes.forEach(gainNode => {
+                    try {
+                        gainNode.gain.value *= fadeAmount;
+                    } catch (e) {
+                        // Gain node might be disconnected
+                    }
+                });
+                
+                if (currentStep >= fadeSteps) {
+                    clearInterval(fadeInterval);
+                    stopSyntheticAudio();
                 }
             } else {
                 clearInterval(fadeInterval);
