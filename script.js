@@ -80,7 +80,21 @@ function updateThemeButton() {
         const nextTheme = themes[nextIndex];
         const nextInfo = THEME_CONFIG.themes[nextTheme];
         
-        themeBtn.innerHTML = `${nextInfo.icon} ${nextInfo.name}`;
+        // Update the spans inside the button to maintain the structure
+        const iconSpan = themeBtn.querySelector('.theme-icon');
+        const textSpan = themeBtn.querySelector('.theme-text');
+        
+        if (iconSpan && textSpan) {
+            iconSpan.textContent = nextInfo.icon;
+            textSpan.textContent = nextInfo.name;
+        } else {
+            // Fallback: recreate the structure if spans don't exist
+            themeBtn.innerHTML = `
+                <span class="theme-icon">${nextInfo.icon}</span>
+                <span class="theme-text">${nextInfo.name}</span>
+            `;
+        }
+        
         themeBtn.title = `Cambiar a ${nextInfo.name}`;
     }
 }
@@ -1344,6 +1358,10 @@ let pomodoroHistory = [];
 let concentrationSounds = [];
 let breakSounds = [];
 
+// Audio objects for continuous sounds
+let currentAudio = null;
+let isAudioPlaying = false;
+
 // Initialize sound files and history on startup
 function initializePomodoroSounds() {
     // Try to load available sound files
@@ -1358,8 +1376,9 @@ function initializePomodoroSounds() {
 
 // Discover available sound files
 async function discoverSoundFiles() {
-    // Try to find concentration sounds
+    // Try to find concentration sounds - INCLUDING Pajaritos.mp3
     const concentrationTestFiles = [
+        'Pajaritos.mp3',            // THE ACTUAL FILE THAT EXISTS!
         'concentracion-inicio.mp3',
         'focus-bell.mp3', 
         'start-work.mp3',
@@ -1367,8 +1386,9 @@ async function discoverSoundFiles() {
         'inicio-estudio.mp3'
     ];
     
-    // Try to find break sounds
+    // Try to find break sounds - INCLUDING Pajaritos.mp3
     const breakTestFiles = [
+        'Pajaritos.mp3',            // THE ACTUAL FILE THAT EXISTS!
         'descanso-suave.mp3',
         'break-chime.mp3',
         'relajacion.mp3', 
@@ -1380,6 +1400,7 @@ async function discoverSoundFiles() {
     for (const file of concentrationTestFiles) {
         if (await soundFileExists(`sounds/concentracion/${file}`)) {
             concentrationSounds.push(file);
+            console.log('✅ Found concentration sound:', file);
         }
     }
     
@@ -1387,6 +1408,7 @@ async function discoverSoundFiles() {
     for (const file of breakTestFiles) {
         if (await soundFileExists(`sounds/descanso/${file}`)) {
             breakSounds.push(file);
+            console.log('✅ Found break sound:', file);
         }
     }
     
@@ -1404,7 +1426,9 @@ async function soundFileExists(url) {
     }
 }
 
-// Play phase-specific sound
+// 🎵 NEW CONTINUOUS AUDIO SYSTEM FOR POMODORO PHASES
+
+// Play phase-specific sound (notification only)
 function playPhaseSound(phase) {
     const soundArray = phase === 'focus' ? concentrationSounds : breakSounds;
     
@@ -1413,10 +1437,10 @@ function playPhaseSound(phase) {
         const randomSound = soundArray[Math.floor(Math.random() * soundArray.length)];
         const soundPath = `sounds/${phase === 'focus' ? 'concentracion' : 'descanso'}/${randomSound}`;
         
-        console.log(`🎵 Reproduciendo sonido de ${phase}:`, randomSound);
+        console.log(`🎵 Reproduciendo sonido de notificación ${phase}:`, randomSound);
         
         const audio = new Audio(soundPath);
-        audio.volume = 0.6; // Moderate volume
+        audio.volume = 0.7; // Moderate volume for notifications
         audio.play().catch(error => {
             console.log('🔇 Error reproduciendo sonido específico:', error);
             // Fallback to default notification sound
@@ -1426,6 +1450,80 @@ function playPhaseSound(phase) {
         console.log(`🔔 No hay sonidos específicos para ${phase}, usando sonido por defecto`);
         // Fallback to default notification sound
         playNotificationSound();
+    }
+}
+
+// 🔄 START CONTINUOUS AUDIO IN LOOP FOR PHASE
+function startContinuousAudio(phase) {
+    // Stop any current audio first
+    stopContinuousAudio();
+    
+    const soundArray = phase === 'focus' ? concentrationSounds : breakSounds;
+    
+    if (soundArray.length > 0) {
+        // Pick the Pajaritos.mp3 if available, or random sound
+        let selectedSound = soundArray.find(sound => sound === 'Pajaritos.mp3');
+        if (!selectedSound) {
+            selectedSound = soundArray[Math.floor(Math.random() * soundArray.length)];
+        }
+        
+        const soundPath = `sounds/${phase === 'focus' ? 'concentracion' : 'descanso'}/${selectedSound}`;
+        
+        console.log(`🔄 Iniciando audio continuo para ${phase}:`, selectedSound);
+        
+        // Create new audio object for continuous playback
+        currentAudio = new Audio(soundPath);
+        currentAudio.volume = 0.3; // Lower volume for background
+        currentAudio.loop = true; // ENABLE LOOP!
+        
+        // Start playing
+        currentAudio.play().then(() => {
+            isAudioPlaying = true;
+            console.log(`🎵 Audio continuo iniciado para ${phase}`);
+            showNotification(`🎵 Audio relajante activado para ${phase === 'focus' ? 'concentración' : 'descanso'}`, 'info');
+        }).catch(error => {
+            console.log('🔇 Error iniciando audio continuo:', error);
+            currentAudio = null;
+        });
+    } else {
+        console.log(`❌ No hay sonidos disponibles para ${phase}`);
+    }
+}
+
+// 🛑 STOP CONTINUOUS AUDIO
+function stopContinuousAudio() {
+    if (currentAudio && isAudioPlaying) {
+        console.log('🛑 Deteniendo audio continuo');
+        currentAudio.pause();
+        currentAudio.currentTime = 0;
+        currentAudio = null;
+        isAudioPlaying = false;
+    }
+}
+
+// 🔊 FADE OUT AUDIO GRADUALLY
+function fadeOutContinuousAudio(duration = 2000) {
+    if (currentAudio && isAudioPlaying) {
+        console.log('🔊 Fade out del audio continuo');
+        const startVolume = currentAudio.volume;
+        const fadeSteps = 20;
+        const stepTime = duration / fadeSteps;
+        const volumeStep = startVolume / fadeSteps;
+        
+        let currentStep = 0;
+        const fadeInterval = setInterval(() => {
+            currentStep++;
+            if (currentAudio) {
+                currentAudio.volume = Math.max(0, startVolume - (volumeStep * currentStep));
+                
+                if (currentStep >= fadeSteps || currentAudio.volume <= 0) {
+                    clearInterval(fadeInterval);
+                    stopContinuousAudio();
+                }
+            } else {
+                clearInterval(fadeInterval);
+            }
+        }, stepTime);
     }
 }
 
@@ -1645,8 +1743,13 @@ function startTimer() {
     isPomodoroRunning = true;
     console.log(`🍅 Iniciando ${currentPomodoroPhase === 'focus' ? 'concentración' : 'descanso'} - ${timeRemainingSeconds} segundos`);
     
-    // Play phase-specific sound
+    // Play phase-specific notification sound
     playPhaseSound(currentPomodoroPhase);
+    
+    // 🔄 START CONTINUOUS AUDIO IN BACKGROUND
+    setTimeout(() => {
+        startContinuousAudio(currentPomodoroPhase);
+    }, 1500); // Wait 1.5 seconds after notification sound
     
     pomodoroTimer = setInterval(() => {
         timeRemainingSeconds--;
@@ -1668,6 +1771,10 @@ function pauseTimer() {
     
     isPomodoroRunning = false;
     clearInterval(pomodoroTimer);
+    
+    // 🔊 FADE OUT CONTINUOUS AUDIO
+    fadeOutContinuousAudio(1000); // 1 second fade out
+    
     updatePomodoroDisplay();
     
     console.log('⏸️ Pomodoro pausado');
@@ -1678,6 +1785,9 @@ function pauseTimer() {
 function resetTimer() {
     isPomodoroRunning = false;
     clearInterval(pomodoroTimer);
+    
+    // 🛑 STOP CONTINUOUS AUDIO
+    stopContinuousAudio();
     
     currentCycleNumber = 0;
     currentPomodoroPhase = 'focus';
@@ -1696,7 +1806,10 @@ function completeCurrentPhase() {
     clearInterval(pomodoroTimer);
     isPomodoroRunning = false;
     
-    // Play phase-specific sound instead of generic notification
+    // 🔊 FADE OUT CURRENT AUDIO
+    fadeOutContinuousAudio(1500); // 1.5 second fade out
+    
+    // Play phase-specific notification sound for next phase
     playPhaseSound(currentPomodoroPhase === 'focus' ? 'break' : 'focus');
     
     const totalCycles = parseInt(document.getElementById('totalCycles').value) || 4;
