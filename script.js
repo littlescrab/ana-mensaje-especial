@@ -3,6 +3,12 @@ let currentSection = 'menu';
 let timerInterval;
 let isBreakTime = false;
 let cycleCount = 0;
+let timeRemaining = 0;
+let isTimerRunning = false;
+let targetCycles = 4;
+let pomodoroCycle = 0;
+let startTime = null;
+let pausedTime = null;
 
 // Ejemplo de configuración
 const config = {
@@ -12,17 +18,21 @@ const config = {
 };
 
 // === THEME SYSTEM === //
-let currentTheme = 'dark'; // 'dark' or 'light'
+let currentTheme = 'dark'; // 'light', 'darkblue', or 'dark'
 const THEME_CONFIG = {
     storageKey: 'ana_app_theme',
     themes: {
+        light: {
+            name: 'Jardín de Gerberas',
+            icon: '🌻'
+        },
+        darkblue: {
+            name: 'Océano Nocturno',
+            icon: '🌊'
+        },
         dark: {
             name: 'Noche Romántica',
             icon: '🌙'
-        },
-        light: {
-            name: 'Jardín de Flores', 
-            icon: '🌸'
         }
     }
 };
@@ -42,14 +52,19 @@ function setTheme(theme) {
     console.log(`🎨 Tema cambiado a: ${theme}`);
 }
 
-// Toggle theme function
+// Toggle theme function - Cycle through 3 themes
 function toggleTheme() {
-    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+    const themes = ['light', 'darkblue', 'dark'];
+    const currentIndex = themes.indexOf(currentTheme);
+    const newIndex = (currentIndex + 1) % themes.length;
+    const newTheme = themes[newIndex];
+    
     setTheme(newTheme);
     
     const themeMessages = {
-        dark: '🌙 Cambiado a Noche Romántica - Perfecto para momentos íntimos 💕',
-        light: '🌸 Cambiado a Jardín de Flores - Como un paseo entre gerberas 🌻'
+        light: '🌻 Jardín de Gerberas - Luz natural y flores para Ana',
+        darkblue: '🌊 Océano Nocturno - Profundo como nuestro amor',
+        dark: '🌙 Noche Romántica - Perfecto para momentos íntimos'
     };
     
     showNotification(themeMessages[newTheme], 'info');
@@ -59,11 +74,14 @@ function toggleTheme() {
 function updateThemeButton() {
     const themeBtn = document.getElementById('themeToggle');
     if (themeBtn) {
-        const themeInfo = THEME_CONFIG.themes[currentTheme];
-        const oppositeTheme = currentTheme === 'dark' ? 'light' : 'dark';
-        const oppositeInfo = THEME_CONFIG.themes[oppositeTheme];
-        themeBtn.innerHTML = `${oppositeInfo.icon} ${oppositeInfo.name}`;
-        themeBtn.title = `Cambiar a tema ${oppositeInfo.name.toLowerCase()}`;
+        const themes = ['light', 'darkblue', 'dark'];
+        const currentIndex = themes.indexOf(currentTheme);
+        const nextIndex = (currentIndex + 1) % themes.length;
+        const nextTheme = themes[nextIndex];
+        const nextInfo = THEME_CONFIG.themes[nextTheme];
+        
+        themeBtn.innerHTML = `${nextInfo.icon} ${nextInfo.name}`;
+        themeBtn.title = `Cambiar a ${nextInfo.name}`;
     }
 }
 
@@ -1010,8 +1028,9 @@ function initializeApp() {
     document.getElementById('focusTime').addEventListener('change', updateTimerSettings);
     document.getElementById('breakTime').addEventListener('change', updateTimerSettings);
 
-    // Initialize timer display
-    updateTimerDisplay();
+    // Initialize timer display and sounds
+    initializePomodoroDisplay();
+    initializePomodoroSounds();
     
     // Load special message and start gerberas animation
     setTimeout(() => {
@@ -1309,301 +1328,489 @@ function deletePhoto(index, type) {
     }
 }
 
-// === POMODORO SECTION === //
-function startPomodoro() {
-    const focusTime = parseInt(document.getElementById('focusTime').value) * 60;
-    const breakTime = parseInt(document.getElementById('breakTime').value) * 60;
-    const totalCycles = parseInt(document.getElementById('totalCycles').value);
-    const timerDisplay = document.getElementById('timerDisplay');
-    const timerMode = document.getElementById('timerMode');
-    const currentCycle = document.getElementById('currentCycle');
-    const targetCycles = document.getElementById('targetCycles');
-    const progressBar = document.querySelector('.productivity-indicator');
-    const soundSelect = document.getElementById('notificationSound');
-    const currentDate = document.getElementById('currentDate');
-  
-    let remainingTime = focusTime;
-  
-    cycleCount = 0;
-    currentCycle.textContent = cycleCount;
-    targetCycles.textContent = totalCycles;
-    isBreakTime = false; // 🟢 Asegura que inicie en concentración
-  
-    updateDisplay();
-    updateProgressBar();
-  
-    function playSound() {
-      const selectedSound = soundSelect.value;
-      const audio = new Audio(`sounds/${selectedSound}.mp3`);
-      audio.play().catch(err => console.warn("🔇 Sonido bloqueado por navegador: ", err));
-    }
-  
-    function showNotification(message) {
-      const notification = document.createElement("div");
-      notification.className = "status-text connected";
-      notification.textContent = message;
-      document.body.appendChild(notification);
-      setTimeout(() => {
-        notification.remove();
-      }, 3000);
-    }
-  
-    function updateDisplay() {
-      const minutes = Math.floor(remainingTime / 60);
-      const seconds = remainingTime % 60;
-      timerDisplay.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-      timerMode.textContent = isBreakTime ? '☕ Descanso' : '📚 Concentración';
-      const now = new Date();
-      currentDate.textContent = now.toLocaleString('es-PE');
-    }
-  
-    function updateProgressBar() {
-        const progress = ((cycleCount + (isBreakTime ? 0.5 : 0)) / totalCycles) * 100;
-        progressBar.style.width = `${progress}%`;
-        progressBar.dataset.progress = `${Math.round(progress)}%`;
-        const percentLabel = document.getElementById('progressPercent');
-        if (percentLabel) {
-            percentLabel.textContent = `${Math.round(progress)}%`;
+// === POMODORO SECTION - UNIFIED IMPLEMENTATION === //
+// Global variables for Pomodoro
+let pomodoroTimer = null;
+let currentPomodoroPhase = 'focus'; // 'focus' or 'break'
+let currentCycleNumber = 0;
+let timeRemainingSeconds = 0;
+let isPomodoroRunning = false;
+
+// Pomodoro configuration history
+const POMODORO_HISTORY_KEY = 'pomodoro_config_history';
+let pomodoroHistory = [];
+
+// Available sound files (will be populated dynamically)
+let concentrationSounds = [];
+let breakSounds = [];
+
+// Initialize sound files and history on startup
+function initializePomodoroSounds() {
+    // Try to load available sound files
+    discoverSoundFiles();
+    
+    // Load configuration history
+    loadPomodoroHistory();
+    
+    // Display history in sidebar
+    updateHistoryDisplay();
+}
+
+// Discover available sound files
+async function discoverSoundFiles() {
+    // Try to find concentration sounds
+    const concentrationTestFiles = [
+        'concentracion-inicio.mp3',
+        'focus-bell.mp3', 
+        'start-work.mp3',
+        'concentracion.mp3',
+        'inicio-estudio.mp3'
+    ];
+    
+    // Try to find break sounds
+    const breakTestFiles = [
+        'descanso-suave.mp3',
+        'break-chime.mp3',
+        'relajacion.mp3', 
+        'descanso.mp3',
+        'hora-descanso.mp3'
+    ];
+    
+    // Test concentration sounds
+    for (const file of concentrationTestFiles) {
+        if (await soundFileExists(`sounds/concentracion/${file}`)) {
+            concentrationSounds.push(file);
         }
     }
-  
-    function switchMode() {
-      isBreakTime = !isBreakTime;
-      remainingTime = isBreakTime ? breakTime : focusTime;
-      updateDisplay();
-      updateProgressBar();
-      playSound();
-      showNotification(isBreakTime ? "🌿 Hora de un merecido descanso" : "🔥 A concentrarse con todo, tú puedes");
-    }
-  
-    function startCycle(first = false) {
-      if (!first) switchMode();
-  
-      timerInterval = setInterval(() => {
-        remainingTime--;
-        updateDisplay();
-  
-        const phaseDuration = isBreakTime ? breakTime : focusTime;
-        const totalElapsedSeconds = (phaseDuration - remainingTime);
-        const progressInPhase = (totalElapsedSeconds / phaseDuration) * 100;
-        progressBar.style.width = `${progressInPhase}%`;
-        progressBar.dataset.progress = `${Math.round(progressInPhase)}%`;
-  
-        if (remainingTime <= 0) {
-          clearInterval(timerInterval);
-          if (!isBreakTime) {
-            cycleCount++;
-            currentCycle.textContent = cycleCount;
-          }
-          if (cycleCount < totalCycles) {
-            setTimeout(startCycle, 500);
-          } else {
-            timerMode.textContent = '🎉 Sesión Completa';
-            timerDisplay.textContent = '00:00';
-            progressBar.style.width = '100%';
-            progressBar.dataset.progress = '100%';
-            showNotification("🎯 ¡Todos los ciclos completados con éxito!");
-            playSound();
-          }
+    
+    // Test break sounds
+    for (const file of breakTestFiles) {
+        if (await soundFileExists(`sounds/descanso/${file}`)) {
+            breakSounds.push(file);
         }
-      }, 1000);
     }
-  
-    startCycle(true); // ✅ Inicia directamente en concentración
-  }
-  
-  document.getElementById('startTimer').addEventListener('click', startPomodoro);
-  document.getElementById('pauseTimer').addEventListener('click', () => clearInterval(timerInterval));
-  document.getElementById('resetTimer').addEventListener('click', () => location.reload());
+    
+    console.log('🎵 Sonidos de concentración encontrados:', concentrationSounds);
+    console.log('🔔 Sonidos de descanso encontrados:', breakSounds);
+}
 
-//MODIFICACION CHATGPT  
-
-function updateTimerSettings() {
-    if (!isTimerRunning) {
-        targetCycles = parseInt(document.getElementById('totalCycles').value) || targetCycles;
-        pomodoroCycle = 0;
-        document.getElementById('targetCycles').textContent = targetCycles;
-        document.getElementById('currentCycle').textContent = `${pomodoroCycle}/${targetCycles}`;
-        resetTimer();
-        updateTimerDisplay();
+// Check if sound file exists
+async function soundFileExists(url) {
+    try {
+        const response = await fetch(url, { method: 'HEAD' });
+        return response.ok;
+    } catch (error) {
+        return false;
     }
 }
 
-function updateTimerDisplay() {
-    const focusTimeInMinutes = parseInt(document.getElementById('focusTime').value);
-    const breakTimeInMinutes = parseInt(document.getElementById('breakTime').value);
-    const focusTimeInSeconds = focusTimeInMinutes * 60;
-    const breakTimeInSeconds = breakTimeInMinutes * 60;
-    const totalTimeInSeconds = focusTimeInSeconds + breakTimeInSeconds;
+// Play phase-specific sound
+function playPhaseSound(phase) {
+    const soundArray = phase === 'focus' ? concentrationSounds : breakSounds;
     
-    if (timeRemaining === 0) {
-        timeRemaining = isBreakTime ? breakTimeInSeconds : focusTimeInSeconds;
+    if (soundArray.length > 0) {
+        // Pick random sound if multiple available
+        const randomSound = soundArray[Math.floor(Math.random() * soundArray.length)];
+        const soundPath = `sounds/${phase === 'focus' ? 'concentracion' : 'descanso'}/${randomSound}`;
+        
+        console.log(`🎵 Reproduciendo sonido de ${phase}:`, randomSound);
+        
+        const audio = new Audio(soundPath);
+        audio.volume = 0.6; // Moderate volume
+        audio.play().catch(error => {
+            console.log('🔇 Error reproduciendo sonido específico:', error);
+            // Fallback to default notification sound
+            playNotificationSound();
+        });
+    } else {
+        console.log(`🔔 No hay sonidos específicos para ${phase}, usando sonido por defecto`);
+        // Fallback to default notification sound
+        playNotificationSound();
+    }
+}
+
+// Save configuration to history
+function savePomodoroConfiguration() {
+    const config = {
+        id: Date.now(),
+        focusTime: parseInt(document.getElementById('focusTime').value),
+        breakTime: parseInt(document.getElementById('breakTime').value),
+        totalCycles: parseInt(document.getElementById('totalCycles').value),
+        date: new Date().toISOString(),
+        timestamp: new Date().toLocaleString('es-ES', {
+            day: '2-digit',
+            month: '2-digit', 
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        })
+    };
+    
+    // Add to history (keep only last 20)
+    pomodoroHistory.unshift(config);
+    if (pomodoroHistory.length > 20) {
+        pomodoroHistory = pomodoroHistory.slice(0, 20);
     }
     
-    const minutes = Math.floor(timeRemaining / 60);
-    const seconds = timeRemaining % 60;
+    // Save to localStorage
+    localStorage.setItem(POMODORO_HISTORY_KEY, JSON.stringify(pomodoroHistory));
     
+    // Update display
+    updateHistoryDisplay();
+    
+    console.log('📝 Configuración Pomodoro guardada:', config);
+}
+
+// Load configuration history
+function loadPomodoroHistory() {
+    const saved = localStorage.getItem(POMODORO_HISTORY_KEY);
+    pomodoroHistory = saved ? JSON.parse(saved) : [];
+    console.log('📚 Historial Pomodoro cargado:', pomodoroHistory.length, 'configuraciones');
+}
+
+// Update history display in sidebar
+function updateHistoryDisplay() {
+    const historyContainer = document.getElementById('pomodoroHistory');
+    if (!historyContainer) {
+        console.log('⚠️ Contenedor de historial no encontrado');
+        return;
+    }
+    
+    if (pomodoroHistory.length === 0) {
+        historyContainer.innerHTML = `
+            <div class="history-empty">
+                <div style="font-size: 1.5em; margin-bottom: 10px;">📋</div>
+                <p style="font-size: 0.9em; opacity: 0.7;">No hay configuraciones previas</p>
+            </div>
+        `;
+        return;
+    }
+    
+    const historyHTML = pomodoroHistory.slice(0, 10).map((config, index) => {
+        const isRecent = index < 3;
+        const badgeClass = isRecent ? 'recent-badge' : '';
+        
+        return `
+            <div class="history-item ${badgeClass}" onclick="loadPomodoroConfig(${config.id})">
+                <div class="history-main">
+                    <div class="history-times">
+                        <span class="focus-time">📚 ${config.focusTime}m</span>
+                        <span class="break-time">☕ ${config.breakTime}m</span>
+                        <span class="cycles">🔄 ${config.totalCycles}</span>
+                    </div>
+                    <div class="history-date">${config.timestamp}</div>
+                </div>
+                ${isRecent ? '<div class="recent-indicator">🔥</div>' : ''}
+            </div>
+        `;
+    }).join('');
+    
+    historyContainer.innerHTML = `
+        <div class="history-header">
+            <h4>📋 Últimas Configuraciones</h4>
+            <button onclick="clearPomodoroHistory()" class="clear-history-btn" title="Limpiar historial">🗑️</button>
+        </div>
+        <div class="history-list">
+            ${historyHTML}
+        </div>
+    `;
+}
+
+// Load configuration from history
+window.loadPomodoroConfig = function(configId) {
+    const config = pomodoroHistory.find(c => c.id === configId);
+    if (!config) {
+        showNotification('❌ Configuración no encontrada', 'error');
+        return;
+    }
+    
+    // Only allow loading if timer is not running
+    if (isPomodoroRunning) {
+        showNotification('⚠️ Pausa el timer antes de cambiar configuración', 'warning');
+        return;
+    }
+    
+    // Load configuration into form
+    document.getElementById('focusTime').value = config.focusTime;
+    document.getElementById('breakTime').value = config.breakTime;
+    document.getElementById('totalCycles').value = config.totalCycles;
+    
+    // Reset timer with new configuration
+    resetTimer();
+    
+    showNotification(`📚 Configuración cargada: ${config.focusTime}m/${config.breakTime}m x${config.totalCycles}`, 'success');
+    console.log('📥 Configuración cargada:', config);
+};
+
+// Clear history
+window.clearPomodoroHistory = function() {
+    if (confirm('¿Estás seguro de que quieres eliminar todo el historial de configuraciones?')) {
+        pomodoroHistory = [];
+        localStorage.removeItem(POMODORO_HISTORY_KEY);
+        updateHistoryDisplay();
+        showNotification('🗑️ Historial de configuraciones eliminado', 'info');
+    }
+};
+
+// Initialize Pomodoro timer display
+function initializePomodoroDisplay() {
+    const focusMinutes = parseInt(document.getElementById('focusTime').value) || 25;
+    const totalCycles = parseInt(document.getElementById('totalCycles').value) || 4;
+    
+    timeRemainingSeconds = focusMinutes * 60;
+    currentCycleNumber = 0;
+    currentPomodoroPhase = 'focus';
+    isPomodoroRunning = false;
+    
+    updatePomodoroDisplay();
+}
+
+// Update Pomodoro display
+function updatePomodoroDisplay() {
+    const minutes = Math.floor(timeRemainingSeconds / 60);
+    const seconds = timeRemainingSeconds % 60;
+    
+    // Update timer display
     document.getElementById('timerDisplay').textContent = 
         `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
     
-    document.getElementById('timerMode').textContent = isBreakTime ? 'Descanso' : 'Concentración';
+    // Update mode display with icons
+    const modeText = currentPomodoroPhase === 'focus' ? '📚 Concentración' : '☕ Descanso';
+    document.getElementById('timerMode').textContent = modeText;
     
-    // Actualizar barra de progreso de productividad
+    // Update cycle counter
+    const totalCycles = parseInt(document.getElementById('totalCycles').value) || 4;
+    document.getElementById('currentCycle').textContent = currentCycleNumber;
+    document.getElementById('targetCycles').textContent = totalCycles;
     
-    const productivityBar = document.querySelector('.productivity-indicator');
-    const progressText = document.querySelector('.productivity-indicator-text');
+    // Update progress bar
+    updatePomodoroProgressBar();
     
-    if (isBreakTime) {
-        const focusProgress = '100%';
-        const breakProgress = `${((breakTimeInSeconds - timeRemaining) / breakTimeInSeconds) * 100}%`;
-        productivityBar.style.setProperty('--focus-progress', focusProgress);
-        productivityBar.style.setProperty('--break-progress', breakProgress);
-        progressText.textContent = `Descanso: ${Math.round((timeRemaining / breakTimeInSeconds) * 100)}%`;
-    } else {
-        const focusProgress = `${((focusTimeInSeconds - timeRemaining) / focusTimeInSeconds) * 100}%`;
-        const breakProgress = '0%';
-        productivityBar.style.setProperty('--focus-progress', focusProgress);
-        productivityBar.style.setProperty('--break-progress', breakProgress);
-        progressText.textContent = `Concentración: ${Math.round((timeRemaining / focusTimeInSeconds) * 100)}%`;
-    }
-    
-    document.getElementById('currentCycle').textContent = `${pomodoroCycle}/${targetCycles}`;
-
-    // Actualizar fecha
+    // Update date
     const now = new Date();
     const dateOptions = { weekday: 'long', day: 'numeric', month: 'long' };
     document.getElementById('currentDate').textContent = now.toLocaleDateString('es-ES', dateOptions);
     
+    // Update timer circle appearance
     const timerCircle = document.querySelector('.timer-circle');
-    timerCircle.className = 'timer-circle';
-    if (isTimerRunning) {
-        timerCircle.classList.add('active');
-    }
-    if (isBreakTime) {
-        timerCircle.classList.add('break');
+    if (timerCircle) {
+        timerCircle.className = 'timer-circle';
+        if (isPomodoroRunning) {
+            timerCircle.classList.add('active');
+        }
+        if (currentPomodoroPhase === 'break') {
+            timerCircle.classList.add('break');
+        }
     }
 }
 
-function startNextPhase() {
-    clearInterval(timer);
-    isTimerRunning = false;
-    startTime = null;
-    pausedTime = null;
+// Update progress bar for Pomodoro
+function updatePomodoroProgressBar() {
+    const totalCycles = parseInt(document.getElementById('totalCycles').value) || 4;
+    const focusMinutes = parseInt(document.getElementById('focusTime').value) || 25;
+    const breakMinutes = parseInt(document.getElementById('breakTime').value) || 5;
     
-    // Play notification sound
-    playNotificationSound();
+    // Calculate progress for current phase
+    const totalPhaseTime = currentPomodoroPhase === 'focus' ? focusMinutes * 60 : breakMinutes * 60;
+    const elapsedPhaseTime = totalPhaseTime - timeRemainingSeconds;
+    const phaseProgress = Math.round((elapsedPhaseTime / totalPhaseTime) * 100);
     
-    if (!isBreakTime) {
-        // Cambiar a tiempo de descanso
-        isBreakTime = true;
-        showNotification('¡Tiempo de concentración completado! Ahora toca descansar. 🎉');
-        timeRemaining = parseInt(document.getElementById('breakTime').value) * 60;
-        startTimer();
-    } else {
-        // Cambiar a tiempo de concentración
-        isBreakTime = false;
-        pomodoroCycle++;
+    // Update progress bar
+    const progressBar = document.querySelector('.productivity-indicator');
+    const percentLabel = document.getElementById('progressPercent');
+    
+    if (progressBar) {
+        progressBar.style.width = `${Math.max(0, Math.min(100, phaseProgress))}%`;
+    }
+    
+    if (percentLabel) {
+        percentLabel.textContent = `${Math.max(0, Math.min(100, phaseProgress))}%`;
+    }
+}
+
+// Start Pomodoro timer
+function startTimer() {
+    if (isPomodoroRunning) return;
+    
+    // If timer is at 0, initialize with current phase time
+    if (timeRemainingSeconds === 0) {
+        const focusMinutes = parseInt(document.getElementById('focusTime').value) || 25;
+        const breakMinutes = parseInt(document.getElementById('breakTime').value) || 5;
+        timeRemainingSeconds = currentPomodoroPhase === 'focus' ? focusMinutes * 60 : breakMinutes * 60;
         
-        if (pomodoroCycle >= targetCycles) {
-            showNotification(`🎉 ¡Felicitaciones! Has completado todos tus ${targetCycles} ciclos de estudio. ¡Tómate un buen descanso! 🌟`);
-            resetTimer();
+        // Save configuration to history when starting a new session
+        savePomodoroConfiguration();
+    }
+    
+    isPomodoroRunning = true;
+    console.log(`🍅 Iniciando ${currentPomodoroPhase === 'focus' ? 'concentración' : 'descanso'} - ${timeRemainingSeconds} segundos`);
+    
+    // Play phase-specific sound
+    playPhaseSound(currentPomodoroPhase);
+    
+    pomodoroTimer = setInterval(() => {
+        timeRemainingSeconds--;
+        updatePomodoroDisplay();
+        
+        // Check if phase completed
+        if (timeRemainingSeconds <= 0) {
+            completeCurrentPhase();
+        }
+    }, 1000);
+    
+    updatePomodoroDisplay();
+    showNotification(`🍅 ${currentPomodoroPhase === 'focus' ? 'Iniciando concentración' : 'Iniciando descanso'} - ¡Tú puedes!`, 'info');
+}
+
+// Pause Pomodoro timer
+function pauseTimer() {
+    if (!isPomodoroRunning) return;
+    
+    isPomodoroRunning = false;
+    clearInterval(pomodoroTimer);
+    updatePomodoroDisplay();
+    
+    console.log('⏸️ Pomodoro pausado');
+    showNotification('⏸️ Timer pausado', 'info');
+}
+
+// Reset Pomodoro timer
+function resetTimer() {
+    isPomodoroRunning = false;
+    clearInterval(pomodoroTimer);
+    
+    currentCycleNumber = 0;
+    currentPomodoroPhase = 'focus';
+    
+    const focusMinutes = parseInt(document.getElementById('focusTime').value) || 25;
+    timeRemainingSeconds = focusMinutes * 60;
+    
+    updatePomodoroDisplay();
+    
+    console.log('🔄 Pomodoro reiniciado');
+    showNotification('🔄 Timer reiniciado', 'info');
+}
+
+// Complete current phase and transition to next
+function completeCurrentPhase() {
+    clearInterval(pomodoroTimer);
+    isPomodoroRunning = false;
+    
+    // Play phase-specific sound instead of generic notification
+    playPhaseSound(currentPomodoroPhase === 'focus' ? 'break' : 'focus');
+    
+    const totalCycles = parseInt(document.getElementById('totalCycles').value) || 4;
+    
+    if (currentPomodoroPhase === 'focus') {
+        // Focus completed - increment cycle and start break
+        currentCycleNumber++;
+        
+        if (currentCycleNumber >= totalCycles) {
+            // All cycles completed!
+            completeAllCycles();
             return;
         }
         
-        showNotification(`¡Excelente! Has completado ${pomodoroCycle} de ${targetCycles} ciclos. ¡Sigamos adelante! 💪`);
-        document.getElementById('currentCycle').textContent = `${pomodoroCycle}/${targetCycles}`;
-        timeRemaining = parseInt(document.getElementById('focusTime').value) * 60;
-        startTimer();
-    }
-}
-
-function startTimer() {
-    if (isTimerRunning) return;
-    
-    const focusTimeInMinutes = parseInt(document.getElementById('focusTime').value);
-    const breakTimeInMinutes = parseInt(document.getElementById('breakTime').value);
-    const totalSeconds = isBreakTime ? breakTimeInMinutes * 60 : focusTimeInMinutes * 60;
-    
-    if (timeRemaining === 0 || timeRemaining === undefined) {
-        timeRemaining = totalSeconds;
-    }
-
-    isTimerRunning = true;
-    startTime = Date.now() - ((totalSeconds - timeRemaining) * 1000);
-    
-    timer = setInterval(() => {
-        const currentTime = Date.now();
-        const elapsedSeconds = Math.floor((currentTime - startTime) / 1000);
-        timeRemaining = Math.max(0, totalSeconds - elapsedSeconds);
-        updateTimerDisplay();
+        // Start break
+        currentPomodoroPhase = 'break';
+        const breakMinutes = parseInt(document.getElementById('breakTime').value) || 5;
+        timeRemainingSeconds = breakMinutes * 60;
         
-        if (timeRemaining <= 0) {
-            clearInterval(timer);
-            startNextPhase();
-        }
-    }, 100);
-    
-    updateTimerDisplay();
-}
-
-function pauseTimer() {
-    if (!isTimerRunning) return;
-    
-    isTimerRunning = false;
-    clearInterval(timer);
-    pausedTime = timeRemaining;
-    startTime = null;
-    updateTimerDisplay();
-}
-
-function resetTimer() {
-    isTimerRunning = false;
-    pomodoroCycle = 0;
-    document.getElementById('currentCycle').textContent = `0/${targetCycles}`;
-    clearInterval(timer);
-    timeRemaining = 0;
-    isBreakTime = false;
-    startTime = null;
-    pausedTime = null;
-    updateTimerDisplay();
-}
-
-function playNotificationSound() {
-    const soundType = document.getElementById('notificationSound').value;
-    
-    // Create audio context for different sounds
-    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-    const oscillator = audioContext.createOscillator();
-    const gainNode = audioContext.createGain();
-    
-    oscillator.connect(gainNode);
-    gainNode.connect(audioContext.destination);
-    
-    // Different sound frequencies based on selection
-    const frequencies = {
-        bell: [800, 600, 400],
-        chime: [523, 659, 784],
-        soft: [440, 554, 659],
-        nature: [220, 277, 330]
-    };
-    
-    const freqs = frequencies[soundType] || frequencies.bell;
-    
-    gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
-    
-    freqs.forEach((freq, index) => {
+        showNotification(`🎉 ¡Concentración ${currentCycleNumber} completada! Hora de descansar 🌿`, 'success');
+        
+        // Auto-start break
         setTimeout(() => {
-            oscillator.frequency.setValueAtTime(freq, audioContext.currentTime);
-        }, index * 200);
-    });
+            startTimer();
+        }, 2000);
+        
+    } else {
+        // Break completed - start next focus session
+        currentPomodoroPhase = 'focus';
+        const focusMinutes = parseInt(document.getElementById('focusTime').value) || 25;
+        timeRemainingSeconds = focusMinutes * 60;
+        
+        showNotification(`💪 ¡Descanso terminado! Iniciando concentración ${currentCycleNumber + 1}`, 'info');
+        
+        // Auto-start next focus session
+        setTimeout(() => {
+            startTimer();
+        }, 2000);
+    }
     
-    oscillator.start(audioContext.currentTime);
-    oscillator.stop(audioContext.currentTime + 0.8);
+    updatePomodoroDisplay();
 }
 
+// Complete all Pomodoro cycles
+function completeAllCycles() {
+    currentPomodoroPhase = 'focus';
+    timeRemainingSeconds = 0;
+    
+    document.getElementById('timerMode').textContent = '🎉 ¡Sesión Completa!';
+    document.getElementById('timerDisplay').textContent = '00:00';
+    
+    const progressBar = document.querySelector('.productivity-indicator');
+    const percentLabel = document.getElementById('progressPercent');
+    
+    if (progressBar) progressBar.style.width = '100%';
+    if (percentLabel) percentLabel.textContent = '100%';
+    
+    const totalCycles = parseInt(document.getElementById('totalCycles').value) || 4;
+    showNotification(`🏆 ¡FELICITACIONES! Has completado todos los ${totalCycles} ciclos Pomodoro. ¡Descansa bien! 🌟`, 'success');
+    
+    console.log(`🏆 Sesión Pomodoro completa: ${totalCycles} ciclos`);
+}
+
+// Update timer settings
+function updateTimerSettings() {
+    if (!isPomodoroRunning) {
+        resetTimer();
+    }
+}
+
+// Play notification sound
+function playNotificationSound() {
+    try {
+        const soundType = document.getElementById('notificationSound').value || 'bell';
+        
+        // Create audio context for different sounds
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        
+        // Different sound frequencies based on selection
+        const frequencies = {
+            bell: [800, 600, 400],
+            chime: [523, 659, 784],
+            soft: [440, 554, 659],
+            nature: [220, 277, 330]
+        };
+        
+        const freqs = frequencies[soundType] || frequencies.bell;
+        
+        gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+        
+        freqs.forEach((freq, index) => {
+            setTimeout(() => {
+                oscillator.frequency.setValueAtTime(freq, audioContext.currentTime);
+            }, index * 200);
+        });
+        
+        oscillator.start(audioContext.currentTime);
+        oscillator.stop(audioContext.currentTime + 0.8);
+    } catch (error) {
+        console.log('🔇 Error playing notification sound:', error);
+    }
+}
+
+// Test notification sound
 function testNotificationSound() {
     playNotificationSound();
+    showNotification('🔔 Sonido de prueba reproducido', 'info');
 }
+
 
 // === UTILITY FUNCTIONS === //
 function showNotification(message, type = 'success') {
@@ -1724,10 +1931,17 @@ function setupProposalEventListeners() {
     
     if (yesButton) {
         yesButton.addEventListener('click', function() {
+            // Increment and save yes counter
+            const yesCount = incrementYesCounter();
+            
             responseArea.className = 'response-area yes-response';
             responseArea.innerHTML = `
                 <h3>¡Sí Acepto! 💕</h3>
                 <p>¡Este es el momento más feliz de mi vida! 🌻💖</p>
+                <div class="yes-counter-display">
+                    <p class="yes-count-text">Has dicho "Sí" <span class="yes-count-number">${yesCount}</span> ${yesCount === 1 ? 'vez' : 'veces'} 💕</p>
+                    <div class="yes-celebration">${generateYesCelebration(yesCount)}</div>
+                </div>
                 <div class="hearts-animation">
                     <span class="heart">💖</span>
                     <span class="heart">🌻</span>
@@ -1738,6 +1952,9 @@ function setupProposalEventListeners() {
             `;
             responseArea.classList.remove('hidden');
             createGerberaExplosion();
+            
+            // Show special notifications for milestones
+            showYesMilestoneNotification(yesCount);
         });
     }
     
@@ -1753,20 +1970,56 @@ function setupProposalEventListeners() {
     }
 }
 
-// Create floating gerberas animation
+// Create floating gerberas animation - 20 gerberas para Ana
 function createFloatingGerberas() {
     const container = document.getElementById('gerberasContainer');
     if (!container) return;
     
-    const gerberas = ['🌻', '🌺', '🌼', '🌷', '🌸'];
+    // Variedad de gerberas y flores para Ana 🌻
+    const gerberas = [
+        '🌻', '🌺', '🌼', '🌷', '🌸', '🌹', '💐', '🏵️',
+        '🌻', '🌺', '🌼', '🌷', '🌸', '🌹', '💐', '🏵️',
+        '🌻', '🌺', '🌼', '🌷' // Total 20 tipos
+    ];
     
-    function addGerbera() {
+    // Configuración para diferentes tamaños y velocidades
+    const gerberaConfigs = [
+        { size: '2em', duration: 15, opacity: 0.4 },
+        { size: '2.5em', duration: 18, opacity: 0.3 },
+        { size: '1.8em', duration: 12, opacity: 0.5 },
+        { size: '3em', duration: 22, opacity: 0.25 },
+        { size: '2.2em', duration: 16, opacity: 0.35 }
+    ];
+    
+    function addGerbera(index = null, isInitial = false) {
         const gerbera = document.createElement('div');
         gerbera.className = 'gerbera-float';
-        gerbera.textContent = gerberas[Math.floor(Math.random() * gerberas.length)];
+        
+        // Usar índice específico o aleatorio
+        const gerberaIndex = index !== null ? index : Math.floor(Math.random() * gerberas.length);
+        gerbera.textContent = gerberas[gerberaIndex];
+        
+        // Configuración aleatoria
+        const config = gerberaConfigs[Math.floor(Math.random() * gerberaConfigs.length)];
+        
+        // Posición horizontal aleatoria
         gerbera.style.left = Math.random() * 100 + 'vw';
-        gerbera.style.animationDuration = (Math.random() * 10 + 10) + 's';
-        gerbera.style.opacity = Math.random() * 0.3 + 0.1;
+        
+        // Configurar tamaño, duración y opacidad
+        gerbera.style.fontSize = config.size;
+        gerbera.style.animationDuration = config.duration + 's';
+        gerbera.style.opacity = config.opacity;
+        
+        // Delay aleatorio para variedad
+        const delay = isInitial ? Math.random() * 5 : 0;
+        gerbera.style.animationDelay = delay + 's';
+        
+        // Rotación aleatoria inicial
+        gerbera.style.transform = `rotate(${Math.random() * 360}deg)`;
+        
+        // Variaciones en la animación
+        const animationType = Math.random() > 0.5 ? 'floatGerbera' : 'floatGerberaAlt';
+        gerbera.style.animationName = animationType;
         
         container.appendChild(gerbera);
         
@@ -1775,55 +2028,153 @@ function createFloatingGerberas() {
             if (gerbera.parentNode) {
                 gerbera.parentNode.removeChild(gerbera);
             }
-        }, 20000);
+        }, (config.duration + delay + 2) * 1000);
     }
     
-    // Add gerberas periodically
-    setInterval(addGerbera, 3000);
-    // Add initial gerberas
-    for (let i = 0; i < 3; i++) {
-        setTimeout(addGerbera, i * 1000);
+    // Función para crear las 20 gerberas iniciales
+    function createInitialGerberas() {
+        for (let i = 0; i < 20; i++) {
+            setTimeout(() => {
+                addGerbera(i, true);
+            }, i * 200); // Escalonar la aparición
+        }
     }
+    
+    // Crear gerberas iniciales inmediatamente
+    createInitialGerberas();
+    
+    // Continuar agregando gerberas de forma periódica
+    setInterval(() => {
+        addGerbera();
+    }, 2000); // Cada 2 segundos
+    
+    // Recrear el conjunto completo cada 30 segundos
+    setInterval(() => {
+        createInitialGerberas();
+    }, 30000);
+    
+    console.log('🌻 Sistema de 20 gerberas flotantes inicializado para Ana');
 }
 
-// Create gerbera explosion effect
+// Create enhanced gerbera explosion effect with more variety
 function createGerberaExplosion() {
     const container = document.getElementById('gerberasContainer');
     if (!container) return;
     
-    const gerberas = ['🌻', '🌺', '🌼', '🌷', '🌸', '💖', '💕', '💝'];
+    // Expanded variety of flowers and romantic symbols
+    const flowers = [
+        '🌻', '🌺', '🌼', '🌷', '🌸', '🌹', '💐', '🏵️',
+        '🌻', '🌺', '🌼', '🌷', '🌸', '🌹', '💐', '🏵️', // Duplicates for higher probability
+        '💖', '💕', '💝', '💗', '💘', '💓', '❤️', '💜',
+        '⭐', '✨', '💫', '🌟', '✴️', '💦', '🎊', '🎉'
+    ];
     
-    for (let i = 0; i < 20; i++) {
-        const gerbera = document.createElement('div');
-        gerbera.textContent = gerberas[Math.floor(Math.random() * gerberas.length)];
-        gerbera.style.position = 'fixed';
-        gerbera.style.left = '50%';
-        gerbera.style.top = '50%';
-        gerbera.style.fontSize = '2em';
-        gerbera.style.pointerEvents = 'none';
-        gerbera.style.zIndex = '1000';
-        
-        const angle = (i / 20) * 2 * Math.PI;
-        const distance = Math.random() * 300 + 100;
-        const finalX = Math.cos(angle) * distance;
-        const finalY = Math.sin(angle) * distance;
-        
-        gerbera.style.transform = `translate(-50%, -50%)`;
-        container.appendChild(gerbera);
-        
-        // Animate explosion
+    // Create multiple waves of explosion
+    const waves = 3;
+    const particlesPerWave = 15;
+    
+    for (let wave = 0; wave < waves; wave++) {
         setTimeout(() => {
-            gerbera.style.transition = 'all 2s ease-out';
-            gerbera.style.transform = `translate(${finalX}px, ${finalY}px) rotate(${Math.random() * 720}deg) scale(0)`;
-            gerbera.style.opacity = '0';
-        }, 50);
-        
-        // Remove after animation
-        setTimeout(() => {
-            if (gerbera.parentNode) {
-                gerbera.parentNode.removeChild(gerbera);
+            for (let i = 0; i < particlesPerWave; i++) {
+                const flower = document.createElement('div');
+                flower.textContent = flowers[Math.floor(Math.random() * flowers.length)];
+                flower.style.position = 'fixed';
+                flower.style.left = '50%';
+                flower.style.top = '50%';
+                flower.style.pointerEvents = 'none';
+                flower.style.zIndex = '1000';
+                
+                // Variable sizes for more visual interest
+                const sizes = ['1.5em', '2em', '2.5em', '3em', '3.5em'];
+                flower.style.fontSize = sizes[Math.floor(Math.random() * sizes.length)];
+                
+                // Enhanced explosion pattern with more randomness
+                const baseAngle = (i / particlesPerWave) * 2 * Math.PI;
+                const angleVariation = (Math.random() - 0.5) * 0.8; // Add some randomness
+                const angle = baseAngle + angleVariation;
+                
+                // Variable distances for depth
+                const minDistance = 150 + (wave * 50);
+                const maxDistance = 400 + (wave * 100);
+                const distance = Math.random() * (maxDistance - minDistance) + minDistance;
+                
+                const finalX = Math.cos(angle) * distance;
+                const finalY = Math.sin(angle) * distance;
+                
+                // Add some vertical bias for more natural movement
+                const verticalBias = (Math.random() - 0.5) * 100;
+                
+                flower.style.transform = `translate(-50%, -50%)`;
+                container.appendChild(flower);
+                
+                // Enhanced animation with more natural physics
+                setTimeout(() => {
+                    const duration = 2 + Math.random() * 1.5; // Variable duration
+                    const rotation = Math.random() * 1440 + 360; // More rotation
+                    const scaleFactor = Math.random() * 0.5; // Variable scale
+                    
+                    flower.style.transition = `all ${duration}s cubic-bezier(0.25, 0.46, 0.45, 0.94)`;
+                    flower.style.transform = `translate(${finalX}px, ${finalY + verticalBias}px) rotate(${rotation}deg) scale(${scaleFactor})`;
+                    flower.style.opacity = '0';
+                    
+                    // Add a subtle glow effect
+                    flower.style.textShadow = '0 0 10px rgba(255, 192, 203, 0.8)';
+                    
+                }, 50 + i * 10); // Stagger the animations slightly
+                
+                // Remove after animation with variable cleanup time
+                setTimeout(() => {
+                    if (flower.parentNode) {
+                        flower.parentNode.removeChild(flower);
+                    }
+                }, 4000 + (wave * 500));
             }
-        }, 2500);
+        }, wave * 300); // Delay between waves
+    }
+    
+    // Add sparkle effect at the center
+    createSparkleEffect();
+}
+
+// Create sparkle effect for the center of explosion
+function createSparkleEffect() {
+    const container = document.getElementById('gerberasContainer');
+    if (!container) return;
+    
+    const sparkles = ['✨', '⭐', '💫', '🌟', '✴️'];
+    
+    for (let i = 0; i < 8; i++) {
+        const sparkle = document.createElement('div');
+        sparkle.textContent = sparkles[Math.floor(Math.random() * sparkles.length)];
+        sparkle.style.position = 'fixed';
+        sparkle.style.left = '50%';
+        sparkle.style.top = '50%';
+        sparkle.style.fontSize = '1.5em';
+        sparkle.style.pointerEvents = 'none';
+        sparkle.style.zIndex = '1001';
+        sparkle.style.transform = 'translate(-50%, -50%)';
+        sparkle.style.opacity = '0';
+        
+        container.appendChild(sparkle);
+        
+        // Sparkle animation
+        setTimeout(() => {
+            sparkle.style.transition = 'all 0.3s ease-out';
+            sparkle.style.opacity = '1';
+            sparkle.style.transform = 'translate(-50%, -50%) scale(1.5)';
+            
+            setTimeout(() => {
+                sparkle.style.transition = 'all 0.5s ease-in';
+                sparkle.style.opacity = '0';
+                sparkle.style.transform = 'translate(-50%, -50%) scale(0.5)';
+            }, 300);
+        }, i * 100);
+        
+        setTimeout(() => {
+            if (sparkle.parentNode) {
+                sparkle.parentNode.removeChild(sparkle);
+            }
+        }, 1500);
     }
 }
 
@@ -2448,6 +2799,79 @@ document.addEventListener('keydown', function(e) {
     }
 });
 
+
+// === YES COUNTER FUNCTIONS === //
+const YES_COUNTER_KEY = 'ana_yes_counter';
+
+// Increment and return yes counter
+function incrementYesCounter() {
+    let count = parseInt(localStorage.getItem(YES_COUNTER_KEY)) || 0;
+    count++;
+    localStorage.setItem(YES_COUNTER_KEY, count.toString());
+    console.log('💕 Contador de "Sí" incrementado a:', count);
+    return count;
+}
+
+// Get current yes counter
+function getYesCounter() {
+    return parseInt(localStorage.getItem(YES_COUNTER_KEY)) || 0;
+}
+
+// Generate celebration based on count
+function generateYesCelebration(count) {
+    if (count === 1) {
+        return '🎉 ¡Tu primera vez diciendo que sí! ¡Momento histórico! 🌻';
+    } else if (count === 5) {
+        return '✨ ¡5 veces! Definitivamente estás segura 💖';
+    } else if (count === 10) {
+        return '🎊 ¡10 VECES! ¡Ya no hay dudas, somos novios! 🌹💍';
+    } else if (count === 25) {
+        return '🏆 ¡25 VECES! Eres la novia más decidida del mundo 👑';
+    } else if (count === 50) {
+        return '🚀 ¡50 VECES! ¡Al infinito y más allá contigo! 🌌';
+    } else if (count === 100) {
+        return '💎 ¡100 VECES! Eres más preciosa que todos los diamantes 💎';
+    } else if (count % 10 === 0) {
+        return `🎯 ¡${count} veces! Cada "Sí" hace mi corazón más feliz 💝`;
+    } else {
+        return `💕 ${count} veces y contando... ¡Te amo cada vez más! 🌻`;
+    }
+}
+
+// Show milestone notifications
+function showYesMilestoneNotification(count) {
+    const milestones = [1, 5, 10, 25, 50, 100];
+    
+    if (milestones.includes(count)) {
+        setTimeout(() => {
+            const messages = {
+                1: '🎉 ¡PRIMERA VEZ! Este es el inicio de nuestra historia de amor',
+                5: '⭐ ¡5 VECES! Ya puedo ver que realmente quieres ser mi novia',
+                10: '💍 ¡10 VECES! Esto es oficial: ¡SOMOS NOVIOS!',
+                25: '👑 ¡25 VECES! Eres la mujer más maravillosa del universo',
+                50: '🚀 ¡50 VECES! Nuestro amor está llegando a las estrellas',
+                100: '💎 ¡100 VECES! Eres mi tesoro más preciado'
+            };
+            
+            showNotification(messages[count], 'success');
+        }, 2000);
+    }
+}
+
+// Reset yes counter (for testing)
+window.resetYesCounter = function() {
+    localStorage.removeItem(YES_COUNTER_KEY);
+    console.log('🔄 Contador de "Sí" reiniciado');
+    showNotification('🔄 Contador reiniciado - ¡Empezamos de nuevo!', 'info');
+};
+
+// Get current count (for testing)
+window.getYesCount = function() {
+    const count = getYesCounter();
+    console.log('📊 Contador actual de "Sí":', count);
+    showNotification(`📊 Has dicho "Sí" ${count} ${count === 1 ? 'vez' : 'veces'}`, 'info');
+    return count;
+};
 
 // REMOVED: All password-related functions have been eliminated
 // The app now starts directly without authentication

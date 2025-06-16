@@ -3,65 +3,197 @@
     transition: all 0.3s ease;
 }
 
-/* === DARK THEME (Default) === */
-[data-theme="dark"] {
-    --bg-primary: linear-gradient(135deg, #0a0a0a 0%, #1a0a1a 25%, #2d0d2d 50%, #3d1a2d 75%, #4d1a1a 100%);
-    --bg-secondary: linear-gradient(135deg, rgba(26, 13, 46, 0.95) 0%, rgba(45, 27, 61, 0.9) 100%);
-    --bg-tertiary: linear-gradient(135deg, rgba(45, 27, 61, 0.8), rgba(74, 25, 66, 0.6));
-    --bg-card: linear-gradient(135deg, rgba(26, 13, 46, 0.9) 0%, rgba(45, 27, 61, 0.8) 100%);
-    --bg-menu-item: linear-gradient(135deg, rgba(26, 13, 46, 0.9) 0%, rgba(45, 27, 61, 0.8) 100%);
-    --bg-menu-item-hover: linear-gradient(135deg, rgba(45, 27, 61, 0.95) 0%, rgba(74, 25, 66, 0.9) 100%);
+/* === DARK BLUE THEME - Océano Nocturno === */
+[data-theme="darkblue"] {
+    /* 🌊 Gradientes del océano profundo */
+    --bg-primary: linear-gradient(135deg, 
+        #0c1445 0%,     /* Azul océano profundo */
+        #1a1f5c 20%,    /* Azul marino */
+        #2a3f6f 40%,    /* Azul acero */
+        #3d5a7e 60%,    /* Azul grisáceo */
+        #4a6b8a 80%,    /* Azul plata */
+        #5b7a96 100%);  /* Azul cielo nocturno */
     
-    --text-primary: #f0f0f0;
-    --text-secondary: #e8e6e3;
-    --text-tertiary: #e8c5ca;
-    --text-muted: #888;
+    --bg-secondary: linear-gradient(135deg, 
+        rgba(12, 20, 69, 0.98) 0%, 
+        rgba(26, 31, 92, 0.95) 30%,
+        rgba(42, 63, 111, 0.92) 60%,
+        rgba(61, 90, 126, 0.9) 100%);
     
-    --accent-primary: #d63384;
-    --accent-secondary: #8b2635;
-    --accent-tertiary: #f8d7da;
+    --bg-tertiary: linear-gradient(135deg, 
+        rgba(42, 63, 111, 0.85) 0%, 
+        rgba(74, 107, 138, 0.75) 50%,
+        rgba(91, 122, 150, 0.7) 100%);
     
-    --border-primary: rgba(248, 215, 218, 0.1);
-    --border-secondary: rgba(248, 215, 218, 0.2);
-    --border-accent: rgba(214, 51, 132, 0.3);
+    --bg-card: linear-gradient(135deg, 
+        rgba(26, 31, 92, 0.95) 0%, 
+        rgba(61, 90, 126, 0.85) 50%,
+        rgba(74, 107, 138, 0.8) 100%);
     
-    --shadow-light: 0 10px 25px rgba(0,0,0,0.4);
-    --shadow-medium: 0 20px 50px rgba(0,0,0,0.6);
-    --shadow-heavy: 0 25px 60px rgba(0,0,0,0.8);
+    --bg-menu-item: linear-gradient(135deg, 
+        rgba(42, 63, 111, 0.9) 0%, 
+        rgba(61, 90, 126, 0.85) 100%);
     
-    --glow-accent: 0 0 30px rgba(214, 51, 132, 0.5);
-    --glow-soft: 0 0 20px rgba(214, 51, 132, 0.3);
+    --bg-menu-item-hover: linear-gradient(135deg, 
+        rgba(74, 107, 138, 0.95) 0%, 
+        rgba(91, 122, 150, 0.9) 50%,
+        rgba(100, 149, 237, 0.85) 100%);
+    
+    /* 🌊 Colores de texto oceánicos */
+    --text-primary: #e6f3ff;     /* Blanco azulado */
+    --text-secondary: #d4edff;   /* Azul muy pálido */
+    --text-tertiary: #b8dcff;    /* Azul claro */
+    --text-muted: #89a8c7;       /* Azul grisáceo */
+    
+    /* 🌊 Acentos oceánicos */
+    --accent-primary: #4a9eff;   /* Azul cielo vibrante */
+    --accent-secondary: #6495ed; /* Azul acero */
+    --accent-tertiary: #87ceeb;  /* Azul cielo */
+    --accent-fourth: #1e6091;    /* Azul marino */
+    
+    /* 🌊 Bordes acuáticos */
+    --border-primary: rgba(135, 206, 235, 0.15);
+    --border-secondary: rgba(100, 149, 237, 0.25);
+    --border-accent: rgba(74, 158, 255, 0.35);
+    
+    /* 🌊 Sombras del océano */
+    --shadow-light: 0 8px 25px rgba(12, 20, 69, 0.4), 0 4px 15px rgba(61, 90, 126, 0.3);
+    --shadow-medium: 0 15px 40px rgba(12, 20, 69, 0.6), 0 8px 25px rgba(91, 122, 150, 0.4);
+    --shadow-heavy: 0 25px 60px rgba(12, 20, 69, 0.8), 0 15px 40px rgba(61, 90, 126, 0.5);
+    
+    /* 🌊 Efectos de brillo oceánico */
+    --glow-accent: 0 0 25px rgba(74, 158, 255, 0.6), 0 0 50px rgba(100, 149, 237, 0.3);
+    --glow-soft: 0 0 15px rgba(135, 206, 235, 0.4), 0 0 30px rgba(91, 122, 150, 0.2);
+    --glow-intense: 0 0 40px rgba(74, 158, 255, 0.8), 0 0 80px rgba(100, 149, 237, 0.5);
 }
 
-/* === LIGHT THEME - GARDEN FLORAL === */
-/* 🌸 Inspirado en jardines de flores, teoría de color naturaleza */
+/* === DARK THEME - Noche de Rosas Eternas === */
+[data-theme="dark"] {
+    /* 🌹 Gradientes de noche romántica profunda */
+    --bg-primary: linear-gradient(135deg, 
+        #0f0511 0%,     /* Negro violeta profundo */
+        #1e0a2e 20%,    /* Púrpura nocturno */
+        #2d1b4a 40%,    /* Lavanda oscura */
+        #4a1942 60%,    /* Rosa profundo */
+        #6b1e3f 80%,    /* Granate romántico */
+        #8b2635 100%);  /* Burdeos pasional */
+    
+    --bg-secondary: linear-gradient(135deg, 
+        rgba(15, 5, 17, 0.98) 0%, 
+        rgba(30, 10, 46, 0.95) 30%,
+        rgba(45, 27, 74, 0.92) 60%,
+        rgba(74, 25, 66, 0.9) 100%);
+    
+    --bg-tertiary: linear-gradient(135deg, 
+        rgba(45, 27, 74, 0.85) 0%, 
+        rgba(107, 30, 63, 0.75) 50%,
+        rgba(139, 38, 53, 0.7) 100%);
+    
+    --bg-card: linear-gradient(135deg, 
+        rgba(30, 10, 46, 0.95) 0%, 
+        rgba(74, 25, 66, 0.85) 50%,
+        rgba(107, 30, 63, 0.8) 100%);
+    
+    --bg-menu-item: linear-gradient(135deg, 
+        rgba(45, 27, 74, 0.9) 0%, 
+        rgba(74, 25, 66, 0.85) 100%);
+    
+    --bg-menu-item-hover: linear-gradient(135deg, 
+        rgba(107, 30, 63, 0.95) 0%, 
+        rgba(139, 38, 53, 0.9) 50%,
+        rgba(214, 51, 132, 0.85) 100%);
+    
+    /* 💎 Colores de texto refinados */
+    --text-primary: #f8f4f6;     /* Blanco rosado suave */
+    --text-secondary: #f0e6ea;   /* Rosa pálido */
+    --text-tertiary: #e8c5d1;    /* Rosa cálido */
+    --text-muted: #a78a93;       /* Gris rosado */
+    
+    /* 🌹 Acentos de rosa elegante */
+    --accent-primary: #ff6b9d;   /* Rosa vibrante */
+    --accent-secondary: #d63384; /* Rosa profundo */
+    --accent-tertiary: #ffb3d1;  /* Rosa pastel */
+    --accent-fourth: #8b2635;    /* Granate */
+    
+    /* 🌊 Bordes delicados */
+    --border-primary: rgba(255, 179, 209, 0.15);
+    --border-secondary: rgba(214, 51, 132, 0.25);
+    --border-accent: rgba(255, 107, 157, 0.35);
+    
+    /* ✨ Sombras místicas */
+    --shadow-light: 0 8px 25px rgba(15, 5, 17, 0.4), 0 4px 15px rgba(74, 25, 66, 0.3);
+    --shadow-medium: 0 15px 40px rgba(15, 5, 17, 0.6), 0 8px 25px rgba(139, 38, 53, 0.4);
+    --shadow-heavy: 0 25px 60px rgba(15, 5, 17, 0.8), 0 15px 40px rgba(74, 25, 66, 0.5);
+    
+    /* 🌟 Efectos de brillo romántico */
+    --glow-accent: 0 0 25px rgba(255, 107, 157, 0.6), 0 0 50px rgba(214, 51, 132, 0.3);
+    --glow-soft: 0 0 15px rgba(255, 179, 209, 0.4), 0 0 30px rgba(139, 38, 53, 0.2);
+    --glow-intense: 0 0 40px rgba(255, 107, 157, 0.8), 0 0 80px rgba(214, 51, 132, 0.5);
+}
+
+/* === LIGHT THEME - Jardín de Gerberas Encantado === */
+/* 🌻 Paleta inspirada en gerberas naturales y pétalos de flores */
 [data-theme="light"] {
-    --bg-primary: linear-gradient(135deg, #f8fff4 0%, #e8f5e9 25%, #d0f0d8 50%, #c8e6c9 75%, #b2dfdb 100%);
-    --bg-secondary: linear-gradient(135deg, rgba(200, 240, 200, 0.9), rgba(180, 230, 210, 0.85));
-    --bg-tertiary: linear-gradient(135deg, rgba(210, 250, 220, 0.8), rgba(240, 250, 240, 0.6));
-    --bg-card: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(230, 250, 240, 0.85));
-    --bg-menu-item: linear-gradient(135deg, #f1f8e9, #dcedc8);
-    --bg-menu-item-hover: linear-gradient(135deg, #c5e1a5, #aed581);
-
-    --text-primary: #2e4e1f; /* verde bosque */
-    --text-secondary: #4e342e; /* marrón floral */
-    --text-tertiary: #7b4b94; /* lavanda */
-    --text-muted: #888;
-
-    --accent-primary: #81c784; /* verde menta pastel */
-    --accent-secondary: #f48fb1; /* rosa floral */
-    --accent-tertiary: #ce93d8; /* lavanda suave */
-
-    --border-primary: rgba(129, 199, 132, 0.2);
-    --border-secondary: rgba(244, 143, 177, 0.2);
-    --border-accent: rgba(206, 147, 216, 0.3);
-
-    --shadow-light: 0 4px 10px rgba(129, 199, 132, 0.3);
-    --shadow-medium: 0 10px 30px rgba(0, 0, 0, 0.15);
-    --shadow-heavy: 0 20px 50px rgba(0, 0, 0, 0.25);
-
-    --glow-accent: 0 0 15px rgba(244, 143, 177, 0.4);
-    --glow-soft: 0 0 10px rgba(129, 199, 132, 0.3);
+    /* 🌸 Gradientes de jardín celestial */
+    --bg-primary: linear-gradient(135deg, 
+        #fef9f3 0%,     /* Crema marfil suave */
+        #fdf4e3 20%,    /* Melocotón delicado */
+        #fcf0e7 40%,    /* Rosa pálido */
+        #f8e6f0 60%,    /* Lavanda suave */
+        #f0f4f8 80%,    /* Azul cielo */
+        #e8f5e8 100%);  /* Verde menta */
+    
+    --bg-secondary: linear-gradient(135deg, 
+        rgba(254, 249, 243, 0.95) 0%, 
+        rgba(248, 230, 240, 0.9) 30%,
+        rgba(240, 244, 248, 0.85) 60%,
+        rgba(232, 245, 232, 0.8) 100%);
+    
+    --bg-tertiary: linear-gradient(135deg, 
+        rgba(255, 245, 235, 0.8) 0%, 
+        rgba(250, 240, 250, 0.7) 50%,
+        rgba(240, 248, 255, 0.6) 100%);
+    
+    --bg-card: linear-gradient(135deg, 
+        rgba(255, 255, 255, 0.95) 0%, 
+        rgba(254, 249, 243, 0.9) 50%,
+        rgba(248, 230, 240, 0.85) 100%);
+    
+    --bg-menu-item: linear-gradient(135deg, 
+        rgba(255, 245, 235, 0.9) 0%, 
+        rgba(250, 240, 250, 0.85) 100%);
+    
+    --bg-menu-item-hover: linear-gradient(135deg, 
+        rgba(255, 182, 193, 0.8) 0%, 
+        rgba(255, 160, 122, 0.7) 50%,
+        rgba(221, 160, 221, 0.75) 100%);
+    
+    /* 🌺 Colores de texto naturales */
+    --text-primary: #2d5016;     /* Verde bosque profundo */
+    --text-secondary: #8b4513;   /* Marrón tierra */
+    --text-tertiary: #8b0082;    /* Violeta profundo */
+    --text-muted: #696969;       /* Gris pizarra */
+    
+    /* 🌻 Acentos de gerbera vibrante */
+    --accent-primary: #ff6347;   /* Coral vibrante (gerbera naranja) */
+    --accent-secondary: #da70d6; /* Orquídea (gerbera violeta) */
+    --accent-tertiary: #ff69b4;  /* Rosa intenso (gerbera rosa) */
+    --accent-fourth: #32cd32;    /* Verde lima (hojas) */
+    
+    /* 🌿 Bordes florales */
+    --border-primary: rgba(255, 99, 71, 0.2);
+    --border-secondary: rgba(218, 112, 214, 0.25);
+    --border-accent: rgba(255, 105, 180, 0.3);
+    
+    /* ☀️ Sombras naturales del jardín */
+    --shadow-light: 0 4px 15px rgba(45, 80, 22, 0.15), 0 2px 8px rgba(139, 69, 19, 0.1);
+    --shadow-medium: 0 8px 25px rgba(45, 80, 22, 0.2), 0 4px 15px rgba(218, 112, 214, 0.15);
+    --shadow-heavy: 0 15px 40px rgba(45, 80, 22, 0.25), 0 8px 25px rgba(139, 69, 19, 0.2);
+    
+    /* 🌟 Efectos de brillo solar */
+    --glow-accent: 0 0 20px rgba(255, 99, 71, 0.4), 0 0 40px rgba(218, 112, 214, 0.2);
+    --glow-soft: 0 0 12px rgba(255, 105, 180, 0.3), 0 0 25px rgba(50, 205, 50, 0.15);
+    --glow-intense: 0 0 30px rgba(255, 99, 71, 0.6), 0 0 60px rgba(218, 112, 214, 0.4);
 }
 
 
@@ -129,29 +261,166 @@ body {
     transition: all 0.3s ease;
 }
 
-/* Gerbera floating animation */
+/* === SISTEMA DE GERBERAS FLOTANTES PARA ANA === */
+/* 🌻 20 gerberas flotando en toda la interfaz con diferentes animaciones */
+
 .gerbera-float {
     position: fixed;
-    font-size: 3em;
+    font-size: 2.5em;
     animation: floatGerbera 15s infinite linear;
     z-index: -1;
-    opacity: 0.3;
+    opacity: 0.35;
+    pointer-events: none;
+    user-select: none;
+    will-change: transform;
 }
 
+/* Animación principal de gerberas */
 @keyframes floatGerbera {
     0% {
-        transform: translateY(100vh) rotate(0deg);
+        transform: translateY(100vh) rotate(0deg) scale(0.8);
         opacity: 0;
+        filter: blur(1px);
     }
-    10% {
+    5% {
+        opacity: 0.4;
+        filter: blur(0px);
+    }
+    15% {
+        transform: translateY(85vh) rotate(45deg) scale(1);
+        opacity: 0.5;
+    }
+    30% {
+        transform: translateY(65vh) rotate(120deg) scale(1.1);
+        opacity: 0.45;
+    }
+    50% {
+        transform: translateY(40vh) rotate(200deg) scale(1);
+        opacity: 0.5;
+    }
+    70% {
+        transform: translateY(20vh) rotate(280deg) scale(1.05);
+        opacity: 0.4;
+    }
+    85% {
+        transform: translateY(5vh) rotate(330deg) scale(0.9);
         opacity: 0.3;
     }
-    90% {
-        opacity: 0.3;
+    95% {
+        opacity: 0.1;
+        filter: blur(0.5px);
     }
     100% {
-        transform: translateY(-100px) rotate(360deg);
+        transform: translateY(-10vh) rotate(360deg) scale(0.7);
         opacity: 0;
+        filter: blur(1px);
+    }
+}
+
+/* Animación alternativa para variedad */
+@keyframes floatGerberaAlt {
+    0% {
+        transform: translateY(100vh) rotate(0deg) scale(1) translateX(0px);
+        opacity: 0;
+    }
+    8% {
+        opacity: 0.3;
+    }
+    20% {
+        transform: translateY(80vh) rotate(-30deg) scale(1.1) translateX(20px);
+        opacity: 0.4;
+    }
+    35% {
+        transform: translateY(60vh) rotate(-80deg) scale(0.9) translateX(-15px);
+        opacity: 0.5;
+    }
+    50% {
+        transform: translateY(45vh) rotate(-150deg) scale(1.05) translateX(30px);
+        opacity: 0.45;
+    }
+    65% {
+        transform: translateY(25vh) rotate(-220deg) scale(0.95) translateX(-10px);
+        opacity: 0.4;
+    }
+    80% {
+        transform: translateY(10vh) rotate(-300deg) scale(1) translateX(15px);
+        opacity: 0.3;
+    }
+    92% {
+        opacity: 0.15;
+    }
+    100% {
+        transform: translateY(-15vh) rotate(-360deg) scale(0.8) translateX(0px);
+        opacity: 0;
+    }
+}
+
+/* Variaciones específicas por tema */
+[data-theme="dark"] .gerbera-float {
+    opacity: 0.25;
+    filter: drop-shadow(0 0 8px rgba(255, 107, 157, 0.3));
+}
+
+[data-theme="light"] .gerbera-float {
+    opacity: 0.4;
+    filter: drop-shadow(0 0 6px rgba(255, 99, 71, 0.2)) hue-rotate(15deg);
+}
+
+/* Efectos especiales al hover sobre gerberas */
+.gerbera-float:hover {
+    animation-play-state: paused;
+    transform: scale(1.3) !important;
+    opacity: 0.7 !important;
+    filter: drop-shadow(0 0 15px rgba(255, 107, 157, 0.6)) !important;
+    z-index: 10;
+    transition: all 0.3s ease;
+}
+
+/* Contenedor específico para gerberas */
+#gerberasContainer {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    pointer-events: none;
+    z-index: -1;
+    overflow: hidden;
+}
+
+/* Animación especial para cuando Ana acepta la propuesta */
+@keyframes gerberaExplosion {
+    0% {
+        transform: translate(-50%, -50%) scale(0) rotate(0deg);
+        opacity: 1;
+    }
+    25% {
+        transform: translate(-50%, -50%) scale(1.5) rotate(90deg);
+        opacity: 0.8;
+    }
+    50% {
+        transform: translate(-50%, -50%) scale(2) rotate(180deg);
+        opacity: 0.6;
+    }
+    75% {
+        transform: translate(-50%, -50%) scale(2.5) rotate(270deg);
+        opacity: 0.4;
+    }
+    100% {
+        transform: translate(-50%, -50%) scale(3) rotate(360deg);
+        opacity: 0;
+    }
+}
+
+/* Responsive para gerberas en móviles */
+@media (max-width: 768px) {
+    .gerbera-float {
+        font-size: 1.8em;
+        opacity: 0.25;
+    }
+    
+    [data-theme="light"] .gerbera-float {
+        opacity: 0.3;
     }
 }
 
@@ -1031,18 +1300,17 @@ body::before {
 .timer-circle {
     width: 320px;
     height: 320px;
-    border: 15px double #8b4513;
+    border: 15px double var(--accent-primary);
     border-radius: 50%;
     margin: 30px auto;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: radial-gradient(circle at center, #f4e4bc 0%, #d2b48c 100%);
+    background: var(--bg-card);
     position: relative;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.4),
-                inset 0 2px 10px rgba(139, 69, 19, 0.3),
-                inset 0 -2px 10px rgba(139, 69, 19, 0.3);
+    box-shadow: var(--shadow-medium), var(--glow-soft);
     font-family: 'Cascadia Mono', monospace;
+    transition: all 0.4s ease;
 }
 
 .timer-circle::before {
@@ -1652,7 +1920,108 @@ body::before {
     color: var(--text-tertiary);
     opacity: 0.85;
     padding: 0 12px;
-  }
+}
+
+/* === PROGRESS SECTION FOR POMODORO === */
+.progress-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+    margin-top: 20px;
+    width: 100%;
+    max-width: 320px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.progress-percentage {
+    background: var(--bg-card);
+    border: 2px solid var(--border-accent);
+    border-radius: 25px;
+    padding: 8px 20px;
+    backdrop-filter: blur(10px);
+    box-shadow: var(--shadow-light);
+    transition: all 0.3s ease;
+}
+
+.progress-percentage span {
+    font-family: 'Cascadia Mono', monospace;
+    font-size: 1.2em;
+    font-weight: 700;
+    color: var(--accent-primary);
+    text-shadow: var(--glow-soft);
+    letter-spacing: 1px;
+}
+
+.progress-percentage:hover {
+    transform: scale(1.05);
+    box-shadow: var(--shadow-medium), var(--glow-accent);
+    border-color: var(--accent-primary);
+}
+
+/* Enhanced productivity indicator */
+.productivity-indicator {
+    width: 100%;
+    height: 12px;
+    background: var(--bg-tertiary);
+    border-radius: 15px;
+    border: 2px solid var(--border-secondary);
+    box-shadow: var(--shadow-light), inset 0 2px 8px rgba(0, 0, 0, 0.2);
+    overflow: hidden;
+    position: relative;
+    transition: all 0.3s ease;
+}
+
+.productivity-indicator::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: var(--progress, 0%);
+    background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
+    border-radius: 12px;
+    transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 0 10px rgba(214, 51, 132, 0.4);
+}
+
+.productivity-indicator::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(90deg, 
+        transparent 0%,
+        rgba(255, 255, 255, 0.1) 20%,
+        rgba(255, 255, 255, 0.2) 50%,
+        rgba(255, 255, 255, 0.1) 80%,
+        transparent 100%
+    );
+    transform: translateX(-100%);
+    animation: shimmerProgress 2s infinite;
+}
+
+@keyframes shimmerProgress {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
+/* Active timer animations */
+.timer-circle.active .progress-section {
+    animation: pulseProgress 2s ease-in-out infinite;
+}
+
+@keyframes pulseProgress {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.02);
+    }
+}
   
 /* PROPOSAL SECTION STYLING */
 .love-letter {
@@ -3084,6 +3453,257 @@ body::before {
 [data-theme="light"] .gerbera-float {
     opacity: 0.4;                    /* Más visible en tema garden */
     filter: hue-rotate(30deg);       /* Tinte más cálido y natural */
+}
+
+/* 🌻 Mejorar contraste del texto en tema claro */
+[data-theme="light"] .text-primary,
+[data-theme="light"] .text-secondary {
+    text-shadow: 0 1px 2px rgba(46, 78, 31, 0.1);
+}
+
+[data-theme="light"] .section-header h2 {
+    background: linear-gradient(135deg, 
+        #2e4e1f 0%,      /* Verde bosque profundo */
+        #7b4b94 50%,     /* Lavanda fuerte */
+        #4e342e 100%);   /* Marrón floral */
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    text-shadow: none;
+    filter: drop-shadow(2px 2px 4px rgba(46, 78, 31, 0.2));
+}
+
+/* === POMODORO HISTORY STYLES === */
+.timer-history {
+    margin-top: 20px;
+    background: var(--card-bg);
+    border: 2px solid var(--accent-color);
+    border-radius: 12px;
+    padding: 15px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    max-width: 450px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.history-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.history-header h4 {
+    margin: 0;
+    color: var(--text-color);
+    font-size: 1.1em;
+    font-family: 'Cascadia Mono', monospace;
+}
+
+.clear-history-btn {
+    background: #f44336;
+    border: none;
+    border-radius: 6px;
+    padding: 5px 10px;
+    color: white;
+    cursor: pointer;
+    font-size: 0.8em;
+    transition: all 0.3s ease;
+    font-family: inherit;
+}
+
+.clear-history-btn:hover {
+    background: #c62828;
+    transform: scale(1.05);
+    box-shadow: 0 2px 8px rgba(244, 67, 54, 0.3);
+}
+
+.history-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: 250px;
+    overflow-y: auto;
+}
+
+.history-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 12px;
+    background: var(--primary-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    font-size: 0.9em;
+}
+
+.history-item:hover {
+    background: var(--hover-bg);
+    border-color: var(--accent-color);
+    transform: translateX(5px);
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.15);
+}
+
+.history-item.recent-badge {
+    border-left: 4px solid var(--accent-color);
+    background: linear-gradient(135deg, var(--primary-bg) 0%, var(--card-bg) 100%);
+    animation: slideInFromRight 0.5s ease;
+}
+
+.history-main {
+    flex: 1;
+}
+
+.history-times {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 4px;
+    flex-wrap: wrap;
+}
+
+.history-times span {
+    font-size: 0.75em;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: 600;
+    font-family: 'Cascadia Mono', monospace;
+    letter-spacing: 0.5px;
+}
+
+.focus-time {
+    background: #4a7c59 !important;
+    color: white;
+}
+
+.break-time {
+    background: #2196F3 !important;
+    color: white;
+}
+
+.cycles {
+    background: #ff9800 !important;
+    color: white;
+}
+
+.history-date {
+    font-size: 0.7em;
+    color: var(--text-secondary);
+    opacity: 0.8;
+    font-family: 'Cascadia Mono', monospace;
+}
+
+.recent-indicator {
+    font-size: 1.1em;
+    animation: pulse 2s infinite;
+    margin-left: 8px;
+}
+
+.history-empty {
+    text-align: center;
+    padding: 30px 20px;
+    color: var(--text-secondary);
+}
+
+.history-empty div:first-child {
+    margin-bottom: 10px;
+}
+
+/* Custom scrollbar for history list */
+.history-list::-webkit-scrollbar {
+    width: 5px;
+}
+
+.history-list::-webkit-scrollbar-track {
+    background: var(--primary-bg);
+    border-radius: 3px;
+}
+
+.history-list::-webkit-scrollbar-thumb {
+    background: var(--accent-color);
+    border-radius: 3px;
+}
+
+.history-list::-webkit-scrollbar-thumb:hover {
+    background: var(--primary-color);
+}
+
+/* Responsive design for history */
+@media (max-width: 768px) {
+    .timer-history {
+        margin: 15px 10px;
+        padding: 12px;
+    }
+    
+    .history-times {
+        flex-direction: row;
+        gap: 4px;
+    }
+    
+    .history-times span {
+        font-size: 0.7em;
+    }
+    
+    .history-item {
+        padding: 8px 10px;
+        font-size: 0.85em;
+    }
+    
+    .history-header h4 {
+        font-size: 1em;
+    }
+}
+
+/* Animation for new history items */
+@keyframes slideInFromRight {
+    from {
+        opacity: 0;
+        transform: translateX(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* Enhanced pulse animation for recent indicator */
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 0.6;
+        transform: scale(1.15);
+    }
+}
+
+/* Theme-specific adjustments for history */
+[data-theme="light"] .history-item {
+    background: rgba(255, 255, 255, 0.8);
+    border-color: rgba(46, 78, 31, 0.2);
+}
+
+[data-theme="light"] .history-item:hover {
+    background: rgba(255, 255, 255, 0.95);
+    border-color: #4a7c59;
+    box-shadow: 0 3px 12px rgba(46, 78, 31, 0.15);
+}
+
+[data-theme="darkblue"] .history-item {
+    background: rgba(13, 46, 71, 0.7);
+    border-color: rgba(176, 224, 230, 0.2);
+}
+
+[data-theme="darkblue"] .history-item:hover {
+    background: rgba(13, 46, 71, 0.9);
+    border-color: #b0e0e6;
+    box-shadow: 0 3px 12px rgba(176, 224, 230, 0.2);
+}
 }
 
 /* 🕐 Timer con estilo garden */

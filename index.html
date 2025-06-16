@@ -171,10 +171,14 @@
                         </div>
                         <div class="timer-footer">
                           <span id="currentDate"></span>
-                          <span id="progressPercent">0%</span>
                         </div>
                       </div>
-                      <div class="productivity-indicator" data-progress="0%"></div>                      
+                      <div class="progress-section">
+                        <div class="progress-percentage">
+                          <span id="progressPercent">0%</span>
+                        </div>
+                        <div class="productivity-indicator" data-progress="0%"></div>
+                      </div>
                 </div>
                 
                 <div class="timer-controls">
@@ -210,6 +214,13 @@
                             <option value="nature">Naturaleza</option>
                         </select>
                         <button id="testSound" class="vintage-button">🔊 Probar</button>
+                    </div>
+                </div>
+                
+                <!-- Historial de Configuraciones -->
+                <div class="timer-history vintage-box">
+                    <div id="pomodoroHistory">
+                        <!-- History will be populated here -->
                     </div>
                 </div>
             </div>
