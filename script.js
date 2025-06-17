@@ -1074,12 +1074,19 @@ function showSection(sectionName) {
         // Load photos when album section is shown
         if (sectionName === 'album') {
             console.log('🌻 Cargando álbum de fotos...');
-            // Try to load from Firebase first, fallback to local
+            // Try to load with optimization from Firebase first, fallback to local
             if (window.db) {
-                loadPhotosFromFirebase();
+                loadPhotosFromFirebaseOptimized();
             } else {
                 loadExistingPhotos();
             }
+        }
+        
+        // Load Pomodoro sessions when section is shown
+        if (sectionName === 'pomodoro') {
+            console.log('🍅 Cargando sesiones de Pomodoro...');
+            // Load recent sessions from Firebase or localStorage
+            loadRecentPomodoroSessions();
         }
     } else {
         document.querySelector('.menu').style.display = 'grid';
@@ -1478,13 +1485,40 @@ function startContinuousAudio(phase) {
         // Create new audio object for continuous playback
         currentAudio = new Audio(soundPath);
         currentAudio.volume = 0.3; // Lower volume for background
-        currentAudio.loop = true; // ENABLE LOOP!
+        
+        // Calculate session duration to stop audio at the right time
+        const sessionDurationMs = calculateCurrentPhaseDuration() * 60 * 1000; // Convert to milliseconds
+        
+        // 🎵 LÓGICA INTELIGENTE DE AUDIO
+        currentAudio.addEventListener('loadedmetadata', () => {
+            const audioDurationMs = currentAudio.duration * 1000;
+            console.log(`📊 Audio duration: ${currentAudio.duration}s, Session duration: ${sessionDurationMs/1000}s`);
+            
+            if (audioDurationMs <= sessionDurationMs) {
+                // 🔁 AUDIO CORTO: Activar bucle automático
+                currentAudio.loop = true;
+                console.log(`🔁 Audio corto detectado (${currentAudio.duration}s) - Activando bucle`);
+            } else {
+                // ✂️ AUDIO LARGO: NO bucle, se cortará al final del tiempo
+                currentAudio.loop = false;
+                console.log(`✂️ Audio largo detectado (${currentAudio.duration}s) - Se cortará a los ${sessionDurationMs/1000}s`);
+            }
+        });
         
         // Start playing
         currentAudio.play().then(() => {
             isAudioPlaying = true;
-            console.log(`🎵 Audio continuo iniciado para ${phase}`);
+            console.log(`🎵 Audio continuo iniciado para ${phase} - Duración sesión: ${sessionDurationMs/1000}s`);
             showNotification(`🎵 Audio relajante activado para ${phase === 'focus' ? 'concentración' : 'descanso'}`, 'info');
+            
+            // 🎯 PROGRAMAR PARADA DE AUDIO AL TERMINAR EL TIEMPO DE LA SESIÓN
+            setTimeout(() => {
+                if (currentAudio && isAudioPlaying) {
+                    console.log('⏱️ Tiempo de sesión completado - Deteniendo audio');
+                    fadeOutContinuousAudio(2000); // Fade out suave de 2 segundos
+                }
+            }, sessionDurationMs);
+            
         }).catch(error => {
             console.log('🔇 Error iniciando audio continuo:', error);
             // Fallback to synthetic audio if file-based audio fails
@@ -2065,6 +2099,16 @@ function completeAllCycles() {
     if (percentLabel) percentLabel.textContent = '100%';
     
     const totalCycles = parseInt(document.getElementById('totalCycles').value) || 4;
+    
+    // 🔥 GUARDAR SESIÓN COMPLETADA EN FIREBASE
+    saveCompletedPomodoroSession({
+        focusTime: parseInt(document.getElementById('focusTime').value) || 25,
+        breakTime: parseInt(document.getElementById('breakTime').value) || 5,
+        totalCycles: totalCycles,
+        completedAt: new Date(),
+        duration: calculateTotalSessionDuration()
+    });
+    
     showNotification(`🏆 ¡FELICITACIONES! Has completado todos los ${totalCycles} ciclos Pomodoro. ¡Descansa bien! 🌟`, 'success');
     
     console.log(`🏆 Sesión Pomodoro completa: ${totalCycles} ciclos`);
@@ -2970,6 +3014,420 @@ function updateZoomIndicator() {
         setTimeout(() => {
             indicator.classList.remove('visible');
         }, 2000);
+    }
+}
+
+// === FIREBASE POMODORO SESSIONS FUNCTIONS === //
+
+// 🔥 GUARDAR SESIÓN COMPLETADA EN FIREBASE
+async function saveCompletedPomodoroSession(sessionData) {
+    try {
+        if (!window.db || !collection || !addDoc) {
+            console.log('⚠️ Firebase no disponible, guardando sesión localmente');
+            saveSessionToLocalStorage(sessionData);
+            return;
+        }
+        
+        const sessionsRef = collection(window.db, 'pomodoro_sessions');
+        const sessionDoc = {
+            focusTime: sessionData.focusTime,
+            breakTime: sessionData.breakTime,
+            totalCycles: sessionData.totalCycles,
+            completedAt: sessionData.completedAt,
+            duration: sessionData.duration,
+            timestamp: serverTimestamp(),
+            userId: 'ana_juan_sessions' // Para identificar nuestras sesiones
+        };
+        
+        await addDoc(sessionsRef, sessionDoc);
+        console.log('🏆 Sesión Pomodoro guardada en Firebase:', sessionData);
+        showNotification('☁️ Sesión guardada en la nube exitosamente', 'success');
+        
+        // También guardar localmente como backup
+        saveSessionToLocalStorage(sessionData);
+        
+        // Cargar sesiones actualizadas
+        loadRecentPomodoroSessions();
+        
+    } catch (error) {
+        console.error('Error guardando sesión en Firebase:', error);
+        showNotification('⚠️ Error guardando en Firebase, usando almacenamiento local', 'warning');
+        saveSessionToLocalStorage(sessionData);
+    }
+}
+
+// Guardar sesión en localStorage como backup
+function saveSessionToLocalStorage(sessionData) {
+    try {
+        const sessions = JSON.parse(localStorage.getItem('pomodoro_completed_sessions') || '[]');
+        sessions.unshift(sessionData);
+        
+        // Mantener solo las últimas 50 sesiones localmente
+        if (sessions.length > 50) {
+            sessions.splice(50);
+        }
+        
+        localStorage.setItem('pomodoro_completed_sessions', JSON.stringify(sessions));
+        console.log('💾 Sesión guardada localmente:', sessionData);
+    } catch (error) {
+        console.error('Error guardando sesión localmente:', error);
+    }
+}
+
+// 📊 CARGAR ÚLTIMAS 20 SESIONES COMPLETADAS
+async function loadRecentPomodoroSessions() {
+    try {
+        if (!window.db || !collection || !onSnapshot) {
+            console.log('⚠️ Firebase no disponible, cargando sesiones locales');
+            loadSessionsFromLocalStorage();
+            return;
+        }
+        
+        const { query, where, orderBy, limit } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
+        
+        const sessionsRef = collection(window.db, 'pomodoro_sessions');
+        const q = query(
+            sessionsRef,
+            where('userId', '==', 'ana_juan_sessions'),
+            orderBy('timestamp', 'desc'),
+            limit(20)
+        );
+        
+        onSnapshot(q, (snapshot) => {
+            const sessions = [];
+            snapshot.forEach((doc) => {
+                const data = doc.data();
+                sessions.push({
+                    id: doc.id,
+                    focusTime: data.focusTime,
+                    breakTime: data.breakTime,
+                    totalCycles: data.totalCycles,
+                    completedAt: data.completedAt ? data.completedAt.toDate ? data.completedAt.toDate() : new Date(data.completedAt) : new Date(),
+                    duration: data.duration,
+                    source: 'firebase'
+                });
+            });
+            
+            console.log('📊 Sesiones cargadas desde Firebase:', sessions.length);
+            displayRecentSessions(sessions);
+        });
+        
+    } catch (error) {
+        console.error('Error cargando sesiones desde Firebase:', error);
+        loadSessionsFromLocalStorage();
+    }
+}
+
+// Cargar sesiones desde localStorage
+function loadSessionsFromLocalStorage() {
+    try {
+        const sessions = JSON.parse(localStorage.getItem('pomodoro_completed_sessions') || '[]');
+        const recentSessions = sessions.slice(0, 20).map(session => ({
+            ...session,
+            source: 'local'
+        }));
+        
+        console.log('📱 Sesiones cargadas desde localStorage:', recentSessions.length);
+        displayRecentSessions(recentSessions);
+    } catch (error) {
+        console.error('Error cargando sesiones locales:', error);
+        displayRecentSessions([]);
+    }
+}
+
+// 🎨 MOSTRAR ÚLTIMAS SESIONES EN LA INTERFAZ
+function displayRecentSessions(sessions) {
+    const historyContainer = document.getElementById('pomodoroHistory');
+    if (!historyContainer) {
+        console.log('⚠️ Contenedor de historial no encontrado');
+        return;
+    }
+    
+    if (sessions.length === 0) {
+        historyContainer.innerHTML = `
+            <div class="history-empty">
+                <div style="font-size: 1.5em; margin-bottom: 10px;">🏆</div>
+                <p style="font-size: 0.9em; opacity: 0.7;">No hay sesiones completadas aún</p>
+                <p style="font-size: 0.8em; opacity: 0.5;">¡Completa tu primera sesión Pomodoro!</p>
+            </div>
+        `;
+        return;
+    }
+    
+    const sessionsHTML = sessions.map((session, index) => {
+        const isRecent = index < 3;
+        const badgeClass = isRecent ? 'recent-session' : '';
+        const completedDate = new Date(session.completedAt);
+        const timeAgo = getTimeAgo(completedDate);
+        const sourceIcon = session.source === 'firebase' ? '☁️' : '💾';
+        
+        return `
+            <div class="session-item ${badgeClass}">
+                <div class="session-main">
+                    <div class="session-stats">
+                        <span class="focus-time">📚 ${session.focusTime}m</span>
+                        <span class="break-time">☕ ${session.breakTime}m</span>
+                        <span class="cycles">🔄 ${session.totalCycles} ciclos</span>
+                    </div>
+                    <div class="session-info">
+                        <div class="session-date">${timeAgo} ${sourceIcon}</div>
+                        <div class="session-duration">⏱️ ${Math.round(session.duration / 60)} min total</div>
+                    </div>
+                </div>
+                ${isRecent ? '<div class="recent-indicator">🔥</div>' : ''}
+            </div>
+        `;
+    }).join('');
+    
+    historyContainer.innerHTML = `
+        <div class="history-header">
+            <h4>🏆 Últimas 20 Sesiones Completadas</h4>
+            <button onclick="clearCompletedSessions()" class="clear-history-btn" title="Limpiar sesiones completadas">🗑️</button>
+        </div>
+        <div class="sessions-list">
+            ${sessionsHTML}
+        </div>
+        <div class="session-summary">
+            <p><strong>Total sesiones:</strong> ${sessions.length}</p>
+            <p><strong>Tiempo total:</strong> ${Math.round(sessions.reduce((acc, s) => acc + (s.duration || 0), 0) / 3600)} horas</p>
+        </div>
+    `;
+}
+
+// Función auxiliar para calcular tiempo transcurrido
+function getTimeAgo(date) {
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+    
+    if (diffMins < 60) {
+        return `Hace ${diffMins} min`;
+    } else if (diffHours < 24) {
+        return `Hace ${diffHours}h`;
+    } else if (diffDays < 7) {
+        return `Hace ${diffDays} días`;
+    } else {
+        return date.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit' });
+    }
+}
+
+// Función para calcular duración total de la sesión
+function calculateTotalSessionDuration() {
+    const focusTime = parseInt(document.getElementById('focusTime').value) || 25;
+    const breakTime = parseInt(document.getElementById('breakTime').value) || 5;
+    const totalCycles = parseInt(document.getElementById('totalCycles').value) || 4;
+    
+    // Tiempo total = (tiempo_concentración + tiempo_descanso) * ciclos_totales
+    // Pero restamos un descanso porque el último ciclo no tiene descanso
+    const totalMinutes = (focusTime * totalCycles) + (breakTime * (totalCycles - 1));
+    return totalMinutes * 60; // Retornar en segundos
+}
+
+// Función para calcular duración de la fase actual
+function calculateCurrentPhaseDuration() {
+    const focusMinutes = parseInt(document.getElementById('focusTime').value) || 25;
+    const breakMinutes = parseInt(document.getElementById('breakTime').value) || 5;
+    
+    return currentPomodoroPhase === 'focus' ? focusMinutes : breakMinutes;
+}
+
+// Limpiar sesiones completadas
+window.clearCompletedSessions = function() {
+    if (confirm('¿Estás seguro de que quieres eliminar todas las sesiones completadas?')) {
+        localStorage.removeItem('pomodoro_completed_sessions');
+        displayRecentSessions([]);
+        showNotification('🗑️ Sesiones completadas eliminadas', 'info');
+    }
+};
+
+// === OPTIMIZACIÓN DE CARGA DE FOTOS === //
+
+// 🚀 OPTIMIZED PHOTO LOADING WITH PROGRESSIVE LOADING
+async function loadPhotosFromFirebaseOptimized() {
+    try {
+        if (!collection || !onSnapshot || !db) {
+            console.log('Firebase not ready, loading local photos only');
+            return;
+        }
+        
+        console.log('🚀 Iniciando carga optimizada de fotos desde Firebase...');
+        
+        // Mostrar loading indicator
+        const photoGrid = document.getElementById('photoGrid');
+        photoGrid.innerHTML = `
+            <div class="loading-photos">
+                <div class="loading-spinner">⏳</div>
+                <p>Cargando fotos desde la nube...</p>
+            </div>
+        `;
+        
+        // Usar paginación para cargar fotos en lotes
+        const { query, orderBy, limit } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
+        
+        const photosRef = collection(db, 'photos');
+        const q = query(
+            photosRef,
+            orderBy('timestamp', 'desc'),
+            limit(10) // Cargar primeras 10 fotos
+        );
+        
+        onSnapshot(q, (snapshot) => {
+            const photos = [];
+            snapshot.forEach((doc) => {
+                const data = doc.data();
+                photos.push({
+                    id: data.id,
+                    data: data.url,
+                    name: data.name,
+                    type: 'firebase',
+                    date: data.timestamp ? data.timestamp.toDate().toISOString() : new Date().toISOString()
+                });
+            });
+            
+            console.log('📸 Primeras fotos cargadas:', photos.length);
+            
+            // Renderizar fotos con lazy loading
+            renderPhotosWithLazyLoading(photos);
+            
+            // Cargar más fotos si es necesario
+            loadRemainingPhotos(photos.length);
+        });
+        
+    } catch (error) {
+        console.error('Error loading photos from Firebase:', error);
+        loadExistingPhotos(); // Fallback
+    }
+}
+
+// Renderizar fotos con lazy loading
+function renderPhotosWithLazyLoading(photos) {
+    const photoGrid = document.getElementById('photoGrid');
+    
+    if (photos.length === 0) {
+        photoGrid.innerHTML = '';
+        return;
+    }
+    
+    // Store photos globally for viewer
+    window.currentPhotos = photos;
+    
+    // Generate HTML with intersection observer for lazy loading
+    photoGrid.innerHTML = photos.map((photo, index) => {
+        const src = photo.data;
+        return `
+            <div class="photo-item" data-photo-index="${index}" style="cursor: pointer;">
+                <div class="photo-placeholder" data-src="${src}">
+                    <div class="photo-loading">📷</div>
+                </div>
+                <div class="photo-overlay">
+                    <span class="sync-indicator">☁️</span>
+                    <button class="delete-photo" onclick="event.stopPropagation(); deletePhoto(${index}, '${photo.type}')">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+        `;
+    }).join('');
+    
+    // Setup intersection observer for lazy loading
+    setupLazyLoadingObserver();
+    
+    // Setup event listeners after a short delay
+    setTimeout(() => {
+        setupPhotoEventListeners();
+    }, 100);
+}
+
+// Setup intersection observer for lazy loading
+function setupLazyLoadingObserver() {
+    const imageObserver = new IntersectionObserver((entries, observer) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                const placeholder = entry.target;
+                const src = placeholder.getAttribute('data-src');
+                
+                // Create and load the actual image
+                const img = document.createElement('img');
+                img.src = src;
+                img.alt = 'Foto del álbum';
+                img.style.cssText = 'width: 100%; height: 200px; object-fit: cover; cursor: pointer;';
+                img.loading = 'lazy';
+                
+                // Replace placeholder with image when loaded
+                img.onload = () => {
+                    placeholder.innerHTML = '';
+                    placeholder.appendChild(img);
+                    placeholder.classList.add('loaded');
+                };
+                
+                img.onerror = () => {
+                    placeholder.innerHTML = `
+                        <div class="photo-error">
+                            <span>❌</span>
+                            <p>Error cargando imagen</p>
+                        </div>
+                    `;
+                };
+                
+                // Stop observing this element
+                observer.unobserve(placeholder);
+            }
+        });
+    }, {
+        // Start loading when image is 50px away from viewport
+        rootMargin: '50px'
+    });
+    
+    // Observe all photo placeholders
+    const placeholders = document.querySelectorAll('.photo-placeholder');
+    placeholders.forEach(placeholder => {
+        imageObserver.observe(placeholder);
+    });
+}
+
+// Cargar fotos restantes en segundo plano
+async function loadRemainingPhotos(currentCount) {
+    try {
+        if (currentCount >= 50) return; // Límite razonable
+        
+        const { query, orderBy, startAfter, limit, getDocs } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
+        
+        // Cargar más fotos en lotes de 10
+        const photosRef = collection(db, 'photos');
+        const q = query(
+            photosRef,
+            orderBy('timestamp', 'desc'),
+            limit(40) // Cargar hasta 40 fotos más
+        );
+        
+        const snapshot = await getDocs(q);
+        const allPhotos = [];
+        
+        snapshot.forEach((doc) => {
+            const data = doc.data();
+            allPhotos.push({
+                id: data.id,
+                data: data.url,
+                name: data.name,
+                type: 'firebase',
+                date: data.timestamp ? data.timestamp.toDate().toISOString() : new Date().toISOString()
+            });
+        });
+        
+        if (allPhotos.length > currentCount) {
+            console.log('📷 Cargadas fotos adicionales:', allPhotos.length - currentCount);
+            
+            // Update global photos array
+            window.currentPhotos = allPhotos;
+            
+            // Re-render with all photos
+            renderPhotosWithLazyLoading(allPhotos);
+        }
+        
+    } catch (error) {
+        console.error('Error loading remaining photos:', error);
     }
 }
 
