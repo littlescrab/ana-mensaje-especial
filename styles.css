@@ -4393,6 +4393,18 @@ body::before {
     color: var(--text-color);
 }
 
+.session-description {
+    font-size: 0.8em;
+    color: var(--accent-primary);
+    font-style: italic;
+    margin: 3px 0;
+    opacity: 0.9;
+    background: rgba(214, 51, 132, 0.1);
+    padding: 2px 6px;
+    border-radius: 8px;
+    border: 1px solid rgba(214, 51, 132, 0.2);
+}
+
 .recent-indicator {
     position: absolute;
     top: -5px;

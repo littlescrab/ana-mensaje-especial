@@ -1361,9 +1361,6 @@ let currentCycleNumber = 0;
 let timeRemainingSeconds = 0;
 let isPomodoroRunning = false;
 
-// Pomodoro configuration history
-const POMODORO_HISTORY_KEY = 'pomodoro_config_history';
-let pomodoroHistory = [];
 
 // Available sound files (will be populated dynamically)
 let concentrationSounds = [];
@@ -1373,16 +1370,10 @@ let breakSounds = [];
 let currentAudio = null;
 let isAudioPlaying = false;
 
-// Initialize sound files and history on startup
+// Initialize sound files on startup
 function initializePomodoroSounds() {
     // Try to load available sound files
     discoverSoundFiles();
-    
-    // Load configuration history
-    loadPomodoroHistory();
-    
-    // Display history in sidebar
-    updateHistoryDisplay();
 }
 
 // Discover available sound files
@@ -1758,128 +1749,10 @@ function fadeOutSyntheticAudio(duration = 2000) {
     }
 }
 
-// Save configuration to history
-function savePomodoroConfiguration() {
-    const config = {
-        id: Date.now(),
-        focusTime: parseInt(document.getElementById('focusTime').value),
-        breakTime: parseInt(document.getElementById('breakTime').value),
-        totalCycles: parseInt(document.getElementById('totalCycles').value),
-        date: new Date().toISOString(),
-        timestamp: new Date().toLocaleString('es-ES', {
-            day: '2-digit',
-            month: '2-digit', 
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-        })
-    };
-    
-    // Add to history (keep only last 20)
-    pomodoroHistory.unshift(config);
-    if (pomodoroHistory.length > 20) {
-        pomodoroHistory = pomodoroHistory.slice(0, 20);
-    }
-    
-    // Save to localStorage
-    localStorage.setItem(POMODORO_HISTORY_KEY, JSON.stringify(pomodoroHistory));
-    
-    // Update display
-    updateHistoryDisplay();
-    
-    console.log('📝 Configuración Pomodoro guardada:', config);
-}
 
-// Load configuration history
-function loadPomodoroHistory() {
-    const saved = localStorage.getItem(POMODORO_HISTORY_KEY);
-    pomodoroHistory = saved ? JSON.parse(saved) : [];
-    console.log('📚 Historial Pomodoro cargado:', pomodoroHistory.length, 'configuraciones');
-}
 
-// Update history display in sidebar
-function updateHistoryDisplay() {
-    const historyContainer = document.getElementById('pomodoroHistory');
-    if (!historyContainer) {
-        console.log('⚠️ Contenedor de historial no encontrado');
-        return;
-    }
-    
-    if (pomodoroHistory.length === 0) {
-        historyContainer.innerHTML = `
-            <div class="history-empty">
-                <div style="font-size: 1.5em; margin-bottom: 10px;">📋</div>
-                <p style="font-size: 0.9em; opacity: 0.7;">No hay configuraciones previas</p>
-            </div>
-        `;
-        return;
-    }
-    
-    const historyHTML = pomodoroHistory.slice(0, 10).map((config, index) => {
-        const isRecent = index < 3;
-        const badgeClass = isRecent ? 'recent-badge' : '';
-        
-        return `
-            <div class="history-item ${badgeClass}" onclick="loadPomodoroConfig(${config.id})">
-                <div class="history-main">
-                    <div class="history-times">
-                        <span class="focus-time">📚 ${config.focusTime}m</span>
-                        <span class="break-time">☕ ${config.breakTime}m</span>
-                        <span class="cycles">🔄 ${config.totalCycles}</span>
-                    </div>
-                    <div class="history-date">${config.timestamp}</div>
-                </div>
-                ${isRecent ? '<div class="recent-indicator">🔥</div>' : ''}
-            </div>
-        `;
-    }).join('');
-    
-    historyContainer.innerHTML = `
-        <div class="history-header">
-            <h4>📋 Últimas Configuraciones</h4>
-            <button onclick="clearPomodoroHistory()" class="clear-history-btn" title="Limpiar historial">🗑️</button>
-        </div>
-        <div class="history-list">
-            ${historyHTML}
-        </div>
-    `;
-}
 
-// Load configuration from history
-window.loadPomodoroConfig = function(configId) {
-    const config = pomodoroHistory.find(c => c.id === configId);
-    if (!config) {
-        showNotification('❌ Configuración no encontrada', 'error');
-        return;
-    }
-    
-    // Only allow loading if timer is not running
-    if (isPomodoroRunning) {
-        showNotification('⚠️ Pausa el timer antes de cambiar configuración', 'warning');
-        return;
-    }
-    
-    // Load configuration into form
-    document.getElementById('focusTime').value = config.focusTime;
-    document.getElementById('breakTime').value = config.breakTime;
-    document.getElementById('totalCycles').value = config.totalCycles;
-    
-    // Reset timer with new configuration
-    resetTimer();
-    
-    showNotification(`📚 Configuración cargada: ${config.focusTime}m/${config.breakTime}m x${config.totalCycles}`, 'success');
-    console.log('📥 Configuración cargada:', config);
-};
 
-// Clear history
-window.clearPomodoroHistory = function() {
-    if (confirm('¿Estás seguro de que quieres eliminar todo el historial de configuraciones?')) {
-        pomodoroHistory = [];
-        localStorage.removeItem(POMODORO_HISTORY_KEY);
-        updateHistoryDisplay();
-        showNotification('🗑️ Historial de configuraciones eliminado', 'info');
-    }
-};
 
 // Initialize Pomodoro timer display
 function initializePomodoroDisplay() {
@@ -1967,8 +1840,6 @@ function startTimer() {
         const breakMinutes = parseInt(document.getElementById('breakTime').value) || 5;
         timeRemainingSeconds = currentPomodoroPhase === 'focus' ? focusMinutes * 60 : breakMinutes * 60;
         
-        // Save configuration to history when starting a new session
-        savePomodoroConfiguration();
     }
     
     isPomodoroRunning = true;
@@ -2101,10 +1972,12 @@ function completeAllCycles() {
     const totalCycles = parseInt(document.getElementById('totalCycles').value) || 4;
     
     // 🔥 GUARDAR SESIÓN COMPLETADA EN FIREBASE
+    const sessionDescription = document.getElementById('sessionDescription').value.trim();
     saveCompletedPomodoroSession({
         focusTime: parseInt(document.getElementById('focusTime').value) || 25,
         breakTime: parseInt(document.getElementById('breakTime').value) || 5,
         totalCycles: totalCycles,
+        description: sessionDescription || null,
         completedAt: new Date(),
         duration: calculateTotalSessionDuration()
     });
@@ -3029,15 +2902,16 @@ async function saveCompletedPomodoroSession(sessionData) {
         }
         
         const sessionsRef = collection(window.db, 'pomodoro_sessions');
-        const sessionDoc = {
-            focusTime: sessionData.focusTime,
-            breakTime: sessionData.breakTime,
-            totalCycles: sessionData.totalCycles,
-            completedAt: sessionData.completedAt,
-            duration: sessionData.duration,
-            timestamp: serverTimestamp(),
-            userId: 'ana_juan_sessions' // Para identificar nuestras sesiones
-        };
+    const sessionDoc = {
+        focusTime: sessionData.focusTime,
+        breakTime: sessionData.breakTime,
+        totalCycles: sessionData.totalCycles,
+        description: sessionData.description || null,
+        completedAt: sessionData.completedAt,
+        duration: sessionData.duration,
+        timestamp: serverTimestamp(),
+        userId: 'ana_juan_sessions' // Para identificar nuestras sesiones
+    };
         
         await addDoc(sessionsRef, sessionDoc);
         console.log('🏆 Sesión Pomodoro guardada en Firebase:', sessionData);
@@ -3083,37 +2957,42 @@ async function loadRecentPomodoroSessions() {
             return;
         }
         
-        const { query, where, orderBy, limit } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
+        const { query, where, orderBy, limit, getDocs } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
         
+        // Usar getDocs en lugar de onSnapshot para evitar problemas de índices
         const sessionsRef = collection(window.db, 'pomodoro_sessions');
         const q = query(
             sessionsRef,
             where('userId', '==', 'ana_juan_sessions'),
-            orderBy('timestamp', 'desc'),
             limit(20)
         );
         
-        onSnapshot(q, (snapshot) => {
-            const sessions = [];
-            snapshot.forEach((doc) => {
-                const data = doc.data();
-                sessions.push({
-                    id: doc.id,
-                    focusTime: data.focusTime,
-                    breakTime: data.breakTime,
-                    totalCycles: data.totalCycles,
-                    completedAt: data.completedAt ? data.completedAt.toDate ? data.completedAt.toDate() : new Date(data.completedAt) : new Date(),
-                    duration: data.duration,
-                    source: 'firebase'
-                });
+        const querySnapshot = await getDocs(q);
+        const sessions = [];
+        querySnapshot.forEach((doc) => {
+            const data = doc.data();
+            sessions.push({
+                id: doc.id,
+                focusTime: data.focusTime,
+                breakTime: data.breakTime,
+                totalCycles: data.totalCycles,
+                description: data.description || null,
+                completedAt: data.completedAt ? (data.completedAt.toDate ? data.completedAt.toDate() : new Date(data.completedAt)) : new Date(),
+                duration: data.duration,
+                timestamp: data.timestamp ? (data.timestamp.toDate ? data.timestamp.toDate() : new Date(data.timestamp)) : new Date(),
+                source: 'firebase'
             });
-            
-            console.log('📊 Sesiones cargadas desde Firebase:', sessions.length);
-            displayRecentSessions(sessions);
         });
+        
+        // Ordenar por timestamp en el cliente para evitar problemas de índice
+        sessions.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+        
+        console.log('📊 Sesiones cargadas desde Firebase:', sessions.length);
+        displayRecentSessions(sessions);
         
     } catch (error) {
         console.error('Error cargando sesiones desde Firebase:', error);
+        console.log('🔄 Intentando cargar desde localStorage como alternativa');
         loadSessionsFromLocalStorage();
     }
 }
@@ -3137,9 +3016,9 @@ function loadSessionsFromLocalStorage() {
 
 // 🎨 MOSTRAR ÚLTIMAS SESIONES EN LA INTERFAZ
 function displayRecentSessions(sessions) {
-    const historyContainer = document.getElementById('pomodoroHistory');
+    const historyContainer = document.getElementById('completedSessions');
     if (!historyContainer) {
-        console.log('⚠️ Contenedor de historial no encontrado');
+        console.log('⚠️ Contenedor de sesiones completadas no encontrado');
         return;
     }
     
@@ -3169,6 +3048,7 @@ function displayRecentSessions(sessions) {
                         <span class="break-time">☕ ${session.breakTime}m</span>
                         <span class="cycles">🔄 ${session.totalCycles} ciclos</span>
                     </div>
+                    ${session.description ? `<div class="session-description">📝 ${session.description}</div>` : ''}
                     <div class="session-info">
                         <div class="session-date">${timeAgo} ${sourceIcon}</div>
                         <div class="session-duration">⏱️ ${Math.round(session.duration / 60)} min total</div>
@@ -3219,8 +3099,8 @@ function calculateTotalSessionDuration() {
     const breakTime = parseInt(document.getElementById('breakTime').value) || 5;
     const totalCycles = parseInt(document.getElementById('totalCycles').value) || 4;
     
-    // Tiempo total = (tiempo_concentración + tiempo_descanso) * ciclos_totales
-    // Pero restamos un descanso porque el último ciclo no tiene descanso
+    // Tiempo total = (tiempo_concentración * ciclos) + (tiempo_descanso * (ciclos - 1))
+    // Ejemplo: 2 ciclos = concentración + descanso + concentración = 2 concentraciones + 1 descanso
     const totalMinutes = (focusTime * totalCycles) + (breakTime * (totalCycles - 1));
     return totalMinutes * 60; // Retornar en segundos
 }
@@ -3431,6 +3311,7 @@ async function loadRemainingPhotos(currentCount) {
     }
 }
 
+
 // === FIREBASE CLEANUP FUNCTIONS === //
 // Note: Firebase cleanup functions simplified for clean album approach
 
@@ -3451,65 +3332,7 @@ async function migrateCommentsForPhoto(photoId) {
     }
 }
 
-// === TEST FUNCTIONS FOR COMMENTS === //
-// Function to create test comments for development
-window.createTestComments = function() {
-    if (!window.currentPhotoId) {
-        console.log('⚠️ No hay foto seleccionada. Abre una foto primero.');
-        showNotification('⚠️ Abre una foto primero para probar comentarios', 'warning');
-        return;
-    }
-    
-    const testComments = [
-        {
-            id: `test_comment_1_${Date.now()}`,
-            user: 'juan',
-            text: '¡Qué hermosa foto! Me encanta este momento 💕',
-            date: new Date(Date.now() - 60000).toISOString(),
-            photoId: window.currentPhotoId
-        },
-        {
-            id: `test_comment_2_${Date.now()}`,
-            user: 'ana',
-            text: 'Este es uno de mis momentos favoritos 🌻✨',
-            date: new Date(Date.now() - 30000).toISOString(),
-            photoId: window.currentPhotoId
-        },
-        {
-            id: `test_comment_3_${Date.now()}`,
-            user: 'juan',
-            text: 'Siempre serás mi gerbera favorita 🌻💖',
-            date: new Date().toISOString(),
-            photoId: window.currentPhotoId
-        }
-    ];
-    
-    // Save test comments to localStorage
-    const existingComments = JSON.parse(localStorage.getItem(`photo_comments_${window.currentPhotoId}`) || '[]');
-    const allComments = [...existingComments, ...testComments];
-    localStorage.setItem(`photo_comments_${window.currentPhotoId}`, JSON.stringify(allComments));
-    
-    // Display updated comments
-    displayComments(allComments);
-    
-    console.log('✅ Comentarios de prueba creados para foto:', window.currentPhotoId);
-    showNotification('✅ Comentarios de prueba agregados', 'success');
-}
 
-// Function to clear all comments for current photo
-window.clearPhotoComments = function() {
-    if (!window.currentPhotoId) {
-        console.log('⚠️ No hay foto seleccionada.');
-        return;
-    }
-    
-    if (confirm('¿Estás seguro de que quieres eliminar todos los comentarios de esta foto?')) {
-        localStorage.removeItem(`photo_comments_${window.currentPhotoId}`);
-        displayComments([]);
-        console.log('🗑️ Comentarios eliminados para foto:', window.currentPhotoId);
-        showNotification('🗑️ Comentarios eliminados', 'info');
-    }
-}
 
 // Function to list all photos with comments
 window.listPhotosWithComments = function() {

@@ -207,6 +207,10 @@
                         <input type="number" id="breakTime" value="5" min="1" max="30">
                     </div>
                     <div class="setting-group">
+                        <label>📝 Descripción de la Sesión (opcional):</label>
+                        <input type="text" id="sessionDescription" placeholder="Ej: Estudio para examen, Trabajo concentrado, etc." maxlength="50">
+                    </div>
+                    <div class="setting-group">
                         <label>🔔 Sonido de Notificación:</label>
                         <select id="notificationSound">
                             <option value="bell">Campana</option>
@@ -218,10 +222,11 @@
                     </div>
                 </div>
                 
-                <!-- Historial de Configuraciones -->
+                
+                <!-- Sesiones Completadas -->
                 <div class="timer-history vintage-box">
-                    <div id="pomodoroHistory">
-                        <!-- History will be populated here -->
+                    <div id="completedSessions">
+                        <!-- Completed sessions will be populated here -->
                     </div>
                 </div>
             </div>
@@ -450,7 +455,6 @@
                         </div>
                         <div style="display: flex; gap: 10px; flex-wrap: wrap;">
                             <button onclick="window.addComment()" class="add-comment-btn" style="flex: 1;">💕 Agregar Comentario</button>
-                            <button onclick="window.createTestComments()" class="add-comment-btn" style="background: linear-gradient(135deg, #4a7c59 0%, #2d5a3d 100%); flex: 0 0 auto; min-width: 120px;">🧪 Prueba</button>
                         </div>
                     </div>
                 </div>
